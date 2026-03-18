@@ -266,6 +266,7 @@ const Index = () => {
         onApply={editor.applyResize}
       />
     </div>
+    </>
   );
 };
 
