@@ -9,10 +9,18 @@ import { ExportDialog } from "@/components/editor/ExportDialog";
 import { ResizeDialog } from "@/components/editor/ResizeDialog";
 import { WelcomeDialog } from "@/components/editor/WelcomeDialog";
 import { Button } from "@/components/ui/button";
+import { useParams, useLocation, Link } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
+import { supportedLanguages, languageNames, getMessages } from "../i18n";
 import { Check, X, Copy, Scissors, ClipboardPaste } from "lucide-react";
 import type { Adjustments } from "@/hooks/useImageEditor";
 
 const Index = () => {
+  const params = useParams();
+  const currentLang = params.lang && supportedLanguages.includes(params.lang) ? params.lang : "en";
+  const msgs = getMessages(currentLang);
+  const location = useLocation();
+
   const editor = useImageEditor();
   const [showExport, setShowExport] = useState(false);
   const [showResize, setShowResize] = useState(false);
@@ -44,7 +52,39 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="flex h-screen w-screen flex-col overflow-hidden bg-background">
+    <>
+      <Helmet>
+        <title>{msgs.title}</title>
+        <meta name="description" content={msgs.description} />
+        <meta property="og:title" content={msgs.title} />
+        <meta property="og:description" content={msgs.description} />
+        <link rel="canonical" href={`https://photo.localtool.tech${location.pathname}`} />
+        {supportedLanguages.map((lang) => (
+          <link
+            key={lang}
+            rel="alternate"
+            hrefLang={lang}
+            href={`https://photo.localtool.tech/${lang}${location.pathname.replace(/^\/(en|es|pt|fr|de|hi|ja|ko|id|ar|zh)/, "")}`}
+          />
+        ))}
+        <link rel="alternate" hrefLang="x-default" href="https://photo.localtool.tech/en" />
+      </Helmet>
+
+      <div className="border-b border-border bg-muted p-2 text-sm">
+        <span className="font-semibold">{msgs.home}</span>
+        <span className="ml-3">·</span>
+        {supportedLanguages.map((lang) => (
+          <Link
+            key={lang}
+            to={`/${lang}${location.pathname.replace(/^\/(en|es|pt|fr|de|hi|ja|ko|id|ar|zh)/, "")}`}
+            className={`ml-2 rounded px-2 py-1 text-xs ${currentLang === lang ? "bg-primary text-primary-foreground" : "bg-background text-foreground"}`}
+          >
+            {languageNames[lang]}
+          </Link>
+        ))}
+      </div>
+
+      <div className="flex h-screen w-screen flex-col overflow-hidden bg-background">
       <WelcomeDialog />
       <input
         ref={fileInputRef}
