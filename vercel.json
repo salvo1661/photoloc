@@ -1,9 +1,13 @@
 {
   "outputDirectory": "dist/client",
-  "rewrites": [
+  "routes": [
     {
-      "source": "/(.*)",
-      "destination": "/api/ssr"
+      "src": "^/sitemap\\.xml$",
+      "dest": "/api/ssr"
+    },
+    {
+      "src": "^/(.*)$",
+      "dest": "/api/ssr"
     }
   ]
 }
