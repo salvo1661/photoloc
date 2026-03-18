@@ -12,10 +12,12 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import type { ActiveTool } from "@/hooks/useImageEditor";
+import type { Messages } from "@/i18n";
 
 interface LeftSidebarProps {
   activeTool: ActiveTool;
   hasImage: boolean;
+  messages: Messages;
   onToolChange: (tool: ActiveTool) => void;
   onRotateCW: () => void;
   onRotateCCW: () => void;
@@ -23,22 +25,22 @@ interface LeftSidebarProps {
   onFlipV: () => void;
 }
 
-const tools = [
-  { id: "select" as const, icon: MousePointer2, label: "Select / Pan" },
-  { id: "marquee" as const, icon: BoxSelect, label: "Marquee Select" },
-  { id: "crop" as const, icon: Crop, label: "Crop" },
-  { id: "resize" as const, icon: Scaling, label: "Resize" },
-];
-
 export function LeftSidebar({
   activeTool,
   hasImage,
+  messages,
   onToolChange,
   onRotateCW,
   onRotateCCW,
   onFlipH,
   onFlipV,
 }: LeftSidebarProps) {
+  const tools = [
+    { id: "select" as const, icon: MousePointer2, label: messages.ui.tools.selectPan },
+    { id: "marquee" as const, icon: BoxSelect, label: messages.ui.tools.marqueeSelect },
+    { id: "crop" as const, icon: Crop, label: messages.ui.tools.crop },
+    { id: "resize" as const, icon: Scaling, label: messages.ui.tools.resize },
+  ];
   return (
     <div className="flex w-10 flex-col items-center gap-0.5 border-r border-border bg-editor-panel py-2">
       {tools.map((tool) => (
@@ -66,7 +68,7 @@ export function LeftSidebar({
         className="h-8 w-8 text-muted-foreground hover:bg-editor-hover hover:text-foreground"
         onClick={onRotateCCW}
         disabled={!hasImage}
-        title="Rotate 90° CCW"
+        title={messages.ui.tools.rotateCcw}
       >
         <RotateCcw className="h-4 w-4" />
       </Button>
@@ -76,7 +78,7 @@ export function LeftSidebar({
         className="h-8 w-8 text-muted-foreground hover:bg-editor-hover hover:text-foreground"
         onClick={onRotateCW}
         disabled={!hasImage}
-        title="Rotate 90° CW"
+        title={messages.ui.tools.rotateCw}
       >
         <RotateCw className="h-4 w-4" />
       </Button>
@@ -89,7 +91,7 @@ export function LeftSidebar({
         className="h-8 w-8 text-muted-foreground hover:bg-editor-hover hover:text-foreground"
         onClick={onFlipH}
         disabled={!hasImage}
-        title="Flip Horizontal"
+        title={messages.ui.tools.flipHorizontal}
       >
         <FlipHorizontal2 className="h-4 w-4" />
       </Button>
@@ -99,7 +101,7 @@ export function LeftSidebar({
         className="h-8 w-8 text-muted-foreground hover:bg-editor-hover hover:text-foreground"
         onClick={onFlipV}
         disabled={!hasImage}
-        title="Flip Vertical"
+        title={messages.ui.tools.flipVertical}
       >
         <FlipVertical2 className="h-4 w-4" />
       </Button>

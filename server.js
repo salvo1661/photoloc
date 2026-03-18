@@ -35,11 +35,18 @@ app.get("*", async (req, res) => {
 
     const { render } = await import(path.join(root, "dist/server/entry-server.js"));
     const { appHtml, helmet } = await render(url);
+    const helmetTitle = helmet?.title?.toString() ?? "";
+    const helmetMeta = helmet?.meta?.toString() ?? "";
+    const helmetLink = helmet?.link?.toString() ?? "";
+    const helmetHtmlAttrs = helmet?.htmlAttributes?.toString() ?? "";
 
     let html = template;
 
     html = html.replace("<div id=\"root\"></div>", `<div id=\"root\">${appHtml}</div>`);
-    html = html.replace("<title>Image Editor</title>", `${helmet.title}${helmet.meta}${helmet.link}<title>Image Editor</title>`);
+    html = html.replace("</head>", `${helmetTitle}${helmetMeta}${helmetLink}</head>`);
+    if (helmetHtmlAttrs) {
+      html = html.replace(/<html[^>]*>/i, `<html ${helmetHtmlAttrs}>`);
+    }
 
     res.status(200).set({ "Content-Type": "text/html" }).send(html);
   } catch (error) {

@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import type { HistoryLabelKey, HistoryLabelParams, LayerNameKey } from "@/i18n";
 
 export interface Adjustments {
   brightness: number;
@@ -20,6 +21,8 @@ export interface CropRect {
 export interface Layer {
   id: string;
   name: string;
+  nameKey?: LayerNameKey;
+  nameParams?: { index?: number };
   imageData: string;
   width: number;
   height: number;
@@ -28,7 +31,8 @@ export interface Layer {
 }
 
 export interface HistoryEntry {
-  label: string;
+  labelKey: HistoryLabelKey;
+  labelParams?: HistoryLabelParams;
   layers: Layer[];
   activeLayerId: string;
   canvasWidth: number;
@@ -131,9 +135,10 @@ export function useImageEditor() {
 
   // Push history with current layer state
   const pushHistory = useCallback(
-    (label: string, newLayers: Layer[], activeId: string, cw: number, ch: number) => {
+    (labelKey: HistoryLabelKey, newLayers: Layer[], activeId: string, cw: number, ch: number, labelParams?: HistoryLabelParams) => {
       const newEntry: HistoryEntry = {
-        label,
+        labelKey,
+        labelParams,
         layers: newLayers.map((l) => ({ ...l })),
         activeLayerId: activeId,
         canvasWidth: cw,
@@ -155,7 +160,7 @@ export function useImageEditor() {
 
   // Update a specific layer's image data and push history
   const updateActiveLayer = useCallback(
-    (label: string, newImageData: string, newW: number, newH: number) => {
+    (labelKey: HistoryLabelKey, newImageData: string, newW: number, newH: number, labelParams?: HistoryLabelParams) => {
       const newLayers = layers.map((l) =>
         l.id === activeLayerId
           ? { ...l, imageData: newImageData, width: newW, height: newH }
@@ -165,7 +170,7 @@ export function useImageEditor() {
       // For operations that change canvas size (like crop/resize), update canvas dimensions
       const cw = newW;
       const ch = newH;
-      pushHistory(label, newLayers, activeLayerId, cw, ch);
+      pushHistory(labelKey, newLayers, activeLayerId, cw, ch, labelParams);
       compositeAndRender(newLayers, cw, ch);
     },
     [layers, activeLayerId, pushHistory, compositeAndRender]
@@ -197,6 +202,7 @@ export function useImageEditor() {
           const newLayer: Layer = {
             id: layerId,
             name: "Background",
+            nameKey: "background",
             imageData,
             width: img.width,
             height: img.height,
@@ -228,7 +234,7 @@ export function useImageEditor() {
           // Push initial history
           setHistory([
             {
-              label: "Open Image",
+              labelKey: "openImage",
               layers: [{ ...newLayer }],
               activeLayerId: layerId,
               canvasWidth: img.width,
@@ -285,7 +291,11 @@ export function useImageEditor() {
 
   // Helper: apply operation to active layer
   const applyToActiveLayer = useCallback(
-    (label: string, operation: (img: HTMLImageElement) => { canvas: HTMLCanvasElement; w: number; h: number } | null) => {
+    (
+      labelKey: HistoryLabelKey,
+      operation: (img: HTMLImageElement) => { canvas: HTMLCanvasElement; w: number; h: number } | null,
+      labelParams?: HistoryLabelParams
+    ) => {
       const layerData = getActiveLayerData();
       if (!layerData) return;
 
@@ -300,7 +310,7 @@ export function useImageEditor() {
             : l
         );
         setLayers(newLayers);
-        pushHistory(label, newLayers, activeLayerId, imageWidth, imageHeight);
+        pushHistory(labelKey, newLayers, activeLayerId, imageWidth, imageHeight, labelParams);
         compositeAndRender(newLayers, imageWidth, imageHeight);
       };
       img.src = layerData;
@@ -310,7 +320,7 @@ export function useImageEditor() {
 
   // Flatten adjustments into active layer
   const flattenAdjustments = useCallback(() => {
-    applyToActiveLayer("Apply Adjustments", (img) => {
+    applyToActiveLayer("applyAdjustments", (img) => {
       const canvas = document.createElement("canvas");
       canvas.width = img.width;
       canvas.height = img.height;
@@ -326,7 +336,7 @@ export function useImageEditor() {
   // Rotate active layer
   const rotate = useCallback(
     (direction: "cw" | "ccw") => {
-      applyToActiveLayer(`Rotate ${direction === "cw" ? "90° CW" : "90° CCW"}`, (img) => {
+      applyToActiveLayer(direction === "cw" ? "rotateCw" : "rotateCcw", (img) => {
         const canvas = document.createElement("canvas");
         canvas.width = img.height;
         canvas.height = img.width;
@@ -344,7 +354,7 @@ export function useImageEditor() {
   // Flip active layer
   const flip = useCallback(
     (direction: "horizontal" | "vertical") => {
-      applyToActiveLayer(`Flip ${direction}`, (img) => {
+      applyToActiveLayer(direction === "horizontal" ? "flipHorizontal" : "flipVertical", (img) => {
         const canvas = document.createElement("canvas");
         canvas.width = img.width;
         canvas.height = img.height;
@@ -367,7 +377,7 @@ export function useImageEditor() {
   // Crop active layer
   const applyCrop = useCallback(() => {
     if (!cropRect) return;
-    applyToActiveLayer("Crop", (img) => {
+    applyToActiveLayer("crop", (img) => {
       const canvas = document.createElement("canvas");
       canvas.width = cropRect.width;
       canvas.height = cropRect.height;
@@ -384,15 +394,19 @@ export function useImageEditor() {
   // Resize active layer
   const applyResize = useCallback(
     (newWidth: number, newHeight: number) => {
-      applyToActiveLayer(`Resize to ${newWidth}×${newHeight}`, (img) => {
-        const canvas = document.createElement("canvas");
-        canvas.width = newWidth;
-        canvas.height = newHeight;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return null;
-        ctx.drawImage(img, 0, 0, newWidth, newHeight);
-        return { canvas, w: newWidth, h: newHeight };
-      });
+      applyToActiveLayer(
+        "resizeTo",
+        (img) => {
+          const canvas = document.createElement("canvas");
+          canvas.width = newWidth;
+          canvas.height = newHeight;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return null;
+          ctx.drawImage(img, 0, 0, newWidth, newHeight);
+          return { canvas, w: newWidth, h: newHeight };
+        },
+        { width: newWidth, height: newHeight }
+      );
     },
     [applyToActiveLayer]
   );
@@ -507,7 +521,7 @@ export function useImageEditor() {
         l.id === activeLayerId ? { ...l, imageData: newImageData } : l
       );
       setLayers(newLayers);
-      pushHistory("Cut Selection", newLayers, activeLayerId, imageWidth, imageHeight);
+      pushHistory("cutSelection", newLayers, activeLayerId, imageWidth, imageHeight);
       compositeAndRender(newLayers, imageWidth, imageHeight);
     };
     img.src = layerData;
@@ -531,6 +545,8 @@ export function useImageEditor() {
       const newLayer: Layer = {
         id: pastedLayerId,
         name: `Layer ${layers.length}`,
+        nameKey: "layer",
+        nameParams: { index: layers.length },
         imageData: tempCanvas.toDataURL("image/png"),
         width: imageWidth,
         height: imageHeight,
@@ -541,7 +557,7 @@ export function useImageEditor() {
       const newLayers = [...layers, newLayer];
       setLayers(newLayers);
       setActiveLayerId(pastedLayerId);
-      pushHistory("Paste as Layer", newLayers, pastedLayerId, imageWidth, imageHeight);
+      pushHistory("pasteAsLayer", newLayers, pastedLayerId, imageWidth, imageHeight);
       compositeAndRender(newLayers, imageWidth, imageHeight);
       setFloatingSelection(null);
       setSelectionRect(null);
@@ -580,9 +596,12 @@ export function useImageEditor() {
       const tempCanvas = document.createElement("canvas");
       tempCanvas.width = imageWidth || 800;
       tempCanvas.height = imageHeight || 600;
+      const index = layers.length;
       const newLayer: Layer = {
         id,
-        name: name || `Layer ${layers.length}`,
+        name: name || `Layer ${index}`,
+        nameKey: name ? undefined : "layer",
+        nameParams: name ? undefined : { index },
         imageData: tempCanvas.toDataURL("image/png"),
         width: tempCanvas.width,
         height: tempCanvas.height,
@@ -592,7 +611,7 @@ export function useImageEditor() {
       const newLayers = [...layers, newLayer];
       setLayers(newLayers);
       setActiveLayerId(id);
-      pushHistory("Add Layer", newLayers, id, imageWidth, imageHeight);
+      pushHistory("addLayer", newLayers, id, imageWidth, imageHeight);
       compositeAndRender(newLayers, imageWidth, imageHeight);
     },
     [layers, imageWidth, imageHeight, pushHistory, compositeAndRender]
@@ -605,7 +624,7 @@ export function useImageEditor() {
       const newActiveId = activeLayerId === layerId ? newLayers[newLayers.length - 1].id : activeLayerId;
       setLayers(newLayers);
       setActiveLayerId(newActiveId);
-      pushHistory("Delete Layer", newLayers, newActiveId, imageWidth, imageHeight);
+      pushHistory("deleteLayer", newLayers, newActiveId, imageWidth, imageHeight);
       compositeAndRender(newLayers, imageWidth, imageHeight);
     },
     [layers, activeLayerId, imageWidth, imageHeight, pushHistory, compositeAndRender]
@@ -635,7 +654,11 @@ export function useImageEditor() {
 
   const renameLayer = useCallback(
     (layerId: string, name: string) => {
-      setLayers((prev) => prev.map((l) => (l.id === layerId ? { ...l, name } : l)));
+      setLayers((prev) =>
+        prev.map((l) =>
+          l.id === layerId ? { ...l, name, nameKey: undefined, nameParams: undefined } : l
+        )
+      );
     },
     []
   );
@@ -646,7 +669,7 @@ export function useImageEditor() {
       const [moved] = newLayers.splice(fromIndex, 1);
       newLayers.splice(toIndex, 0, moved);
       setLayers(newLayers);
-      pushHistory("Reorder Layers", newLayers, activeLayerId, imageWidth, imageHeight);
+      pushHistory("reorderLayers", newLayers, activeLayerId, imageWidth, imageHeight);
       compositeAndRender(newLayers, imageWidth, imageHeight);
     },
     [layers, activeLayerId, imageWidth, imageHeight, pushHistory, compositeAndRender]
@@ -687,7 +710,7 @@ export function useImageEditor() {
         );
         setLayers(newLayers);
         setActiveLayerId(mergedLayer.id);
-        pushHistory("Merge Down", newLayers, mergedLayer.id, imageWidth, imageHeight);
+        pushHistory("mergeDown", newLayers, mergedLayer.id, imageWidth, imageHeight);
         compositeAndRender(newLayers, imageWidth, imageHeight);
       };
 

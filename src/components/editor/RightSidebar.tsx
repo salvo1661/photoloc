@@ -4,6 +4,8 @@ import { RotateCcw, Check, History } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { LayerPanel } from "@/components/editor/LayerPanel";
 import type { Adjustments, HistoryEntry, Layer } from "@/hooks/useImageEditor";
+import { formatHistoryLabel } from "@/i18n";
+import type { Messages } from "@/i18n";
 
 interface RightSidebarProps {
   adjustments: Adjustments;
@@ -13,6 +15,7 @@ interface RightSidebarProps {
   backgroundColor: string;
   layers: Layer[];
   activeLayerId: string;
+  messages: Messages;
   onAdjustmentChange: (key: keyof Adjustments, value: number) => void;
   onResetAdjustments: () => void;
   onApplyAdjustments: () => void;
@@ -27,24 +30,6 @@ interface RightSidebarProps {
   onMergeDown: (id: string) => void;
 }
 
-const adjustmentConfig: {
-  key: keyof Adjustments;
-  label: string;
-  min: number;
-  max: number;
-  step: number;
-  default: number;
-  unit: string;
-}[] = [
-  { key: "brightness", label: "Brightness", min: 0, max: 200, step: 1, default: 100, unit: "%" },
-  { key: "contrast", label: "Contrast", min: 0, max: 200, step: 1, default: 100, unit: "%" },
-  { key: "saturation", label: "Saturation", min: 0, max: 200, step: 1, default: 100, unit: "%" },
-  { key: "hue", label: "Hue Rotate", min: 0, max: 360, step: 1, default: 0, unit: "°" },
-  { key: "sepia", label: "Sepia", min: 0, max: 100, step: 1, default: 0, unit: "%" },
-  { key: "grayscale", label: "Grayscale", min: 0, max: 100, step: 1, default: 0, unit: "%" },
-  { key: "blur", label: "Blur", min: 0, max: 20, step: 0.1, default: 0, unit: "px" },
-];
-
 export function RightSidebar({
   adjustments,
   hasImage,
@@ -53,6 +38,7 @@ export function RightSidebar({
   backgroundColor,
   layers,
   activeLayerId,
+  messages,
   onAdjustmentChange,
   onResetAdjustments,
   onApplyAdjustments,
@@ -66,6 +52,23 @@ export function RightSidebar({
   onReorderLayers,
   onMergeDown,
 }: RightSidebarProps) {
+  const adjustmentConfig: {
+    key: keyof Adjustments;
+    label: string;
+    min: number;
+    max: number;
+    step: number;
+    default: number;
+    unit: string;
+  }[] = [
+    { key: "brightness", label: messages.ui.adjustments.brightness, min: 0, max: 200, step: 1, default: 100, unit: "%" },
+    { key: "contrast", label: messages.ui.adjustments.contrast, min: 0, max: 200, step: 1, default: 100, unit: "%" },
+    { key: "saturation", label: messages.ui.adjustments.saturation, min: 0, max: 200, step: 1, default: 100, unit: "%" },
+    { key: "hue", label: messages.ui.adjustments.hueRotate, min: 0, max: 360, step: 1, default: 0, unit: messages.ui.adjustments.hueUnit },
+    { key: "sepia", label: messages.ui.adjustments.sepia, min: 0, max: 100, step: 1, default: 0, unit: "%" },
+    { key: "grayscale", label: messages.ui.adjustments.grayscale, min: 0, max: 100, step: 1, default: 0, unit: "%" },
+    { key: "blur", label: messages.ui.adjustments.blur, min: 0, max: 20, step: 0.1, default: 0, unit: "px" },
+  ];
   const hasChanges = adjustmentConfig.some(
     (c) => adjustments[c.key] !== c.default
   );
@@ -76,7 +79,7 @@ export function RightSidebar({
       <div className="flex-shrink overflow-hidden">
         <div className="flex h-8 items-center justify-between border-b border-border bg-editor-panel-header px-3">
           <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Adjustments
+            {messages.ui.right.adjustments}
           </span>
           <div className="flex gap-0.5">
             {hasChanges && (
@@ -86,7 +89,7 @@ export function RightSidebar({
                   size="icon"
                   className="h-5 w-5 text-muted-foreground hover:text-foreground"
                   onClick={onResetAdjustments}
-                  title="Reset"
+                  title={messages.ui.right.reset}
                 >
                   <RotateCcw className="h-3 w-3" />
                 </Button>
@@ -95,7 +98,7 @@ export function RightSidebar({
                   size="icon"
                   className="h-5 w-5 text-editor-success hover:text-editor-success"
                   onClick={onApplyAdjustments}
-                  title="Apply"
+                  title={messages.ui.right.apply}
                 >
                   <Check className="h-3 w-3" />
                 </Button>
@@ -133,7 +136,7 @@ export function RightSidebar({
             {/* Background Color */}
             <div className="border-t border-border pt-3">
               <div className="mb-1.5 flex items-center justify-between">
-                <span className="text-[11px] text-secondary-foreground">Background</span>
+                <span className="text-[11px] text-secondary-foreground">{messages.ui.right.background}</span>
               </div>
               <div className="flex items-center gap-2">
                 <label
@@ -172,6 +175,7 @@ export function RightSidebar({
         layers={layers}
         activeLayerId={activeLayerId}
         hasImage={hasImage}
+        messages={messages}
         onSelectLayer={onSelectLayer}
         onToggleVisibility={onToggleLayerVisibility}
         onDeleteLayer={onDeleteLayer}
@@ -186,7 +190,7 @@ export function RightSidebar({
         <div className="flex h-8 items-center gap-1.5 border-b border-border bg-editor-panel-header px-3">
           <History className="h-3 w-3 text-muted-foreground" />
           <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            History
+            {messages.ui.right.history}
           </span>
         </div>
         <ScrollArea className="h-28">
@@ -203,12 +207,12 @@ export function RightSidebar({
                 }`}
                 onClick={() => onRestoreHistory(i)}
               >
-                {entry.label}
+                {formatHistoryLabel(messages, entry.labelKey, entry.labelParams)}
               </button>
             ))}
             {history.length === 0 && (
               <p className="px-2 py-3 text-center text-[11px] text-muted-foreground">
-                No history yet
+                {messages.ui.right.noHistory}
               </p>
             )}
           </div>

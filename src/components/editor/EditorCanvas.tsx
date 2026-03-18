@@ -1,6 +1,7 @@
 import { useRef, useCallback, useState, useEffect } from "react";
-import { Upload, ImageIcon, Hand } from "lucide-react";
+import { Upload, ImageIcon } from "lucide-react";
 import type { CropRect, ActiveTool, SelectionData } from "@/hooks/useImageEditor";
+import type { Messages } from "@/i18n";
 
 interface EditorCanvasProps {
   canvasRef: React.RefObject<HTMLCanvasElement>;
@@ -10,6 +11,7 @@ interface EditorCanvasProps {
   activeTool: ActiveTool;
   imageWidth: number;
   imageHeight: number;
+  messages: Messages;
   cropRect: CropRect | null;
   onCropChange: (rect: CropRect | null) => void;
   onLoadImage: (file: File) => void;
@@ -28,6 +30,7 @@ export function EditorCanvas({
   activeTool,
   imageWidth,
   imageHeight,
+  messages,
   cropRect,
   onCropChange,
   onLoadImage,
@@ -156,10 +159,10 @@ export function EditorCanvas({
           </div>
           <div className="text-center">
             <p className="text-sm font-medium text-foreground">
-              Drop an image here or click to upload
+              {messages.ui.canvas.dropHere}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Supports PNG, JPG, WEBP, BMP, GIF
+              {messages.ui.canvas.supports}
             </p>
           </div>
         </div>
@@ -222,7 +225,7 @@ export function EditorCanvas({
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-editor-workspace/80">
           <div className="flex flex-col items-center gap-2 rounded-lg border-2 border-dashed border-editor-active p-8">
             <Upload className="h-8 w-8 text-editor-active" />
-            <p className="text-sm text-editor-active">Drop to replace image</p>
+            <p className="text-sm text-editor-active">{messages.ui.canvas.dropToReplace}</p>
           </div>
         </div>
       )}

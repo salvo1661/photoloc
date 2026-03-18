@@ -14,14 +14,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { Messages } from "@/i18n";
 
 interface ExportDialogProps {
   open: boolean;
   onClose: () => void;
   onExport: (format: string, quality: number) => void;
+  messages: Messages;
 }
 
-export function ExportDialog({ open, onClose, onExport }: ExportDialogProps) {
+export function ExportDialog({ open, onClose, onExport, messages }: ExportDialogProps) {
   const [format, setFormat] = useState("png");
   const [quality, setQuality] = useState(92);
 
@@ -31,21 +33,21 @@ export function ExportDialog({ open, onClose, onExport }: ExportDialogProps) {
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="border-border bg-card sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle className="text-sm">Export Image</DialogTitle>
+          <DialogTitle className="text-sm">{messages.ui.dialogs.export.title}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div>
             <label className="mb-1.5 block text-xs text-muted-foreground">
-              Format
+              {messages.ui.dialogs.export.format}
             </label>
             <Select value={format} onValueChange={setFormat}>
               <SelectTrigger className="h-8 text-xs">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="png">PNG (Lossless)</SelectItem>
-                <SelectItem value="jpeg">JPEG</SelectItem>
-                <SelectItem value="webp">WebP</SelectItem>
+                <SelectItem value="png">{messages.ui.dialogs.export.formatPngLossless}</SelectItem>
+                <SelectItem value="jpeg">{messages.ui.dialogs.export.formatJpeg}</SelectItem>
+                <SelectItem value="webp">{messages.ui.dialogs.export.formatWebp}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -53,7 +55,7 @@ export function ExportDialog({ open, onClose, onExport }: ExportDialogProps) {
           {isLossy && (
             <div>
               <div className="mb-1.5 flex items-center justify-between">
-                <label className="text-xs text-muted-foreground">Quality</label>
+                <label className="text-xs text-muted-foreground">{messages.ui.dialogs.export.quality}</label>
                 <span className="font-mono text-xs text-muted-foreground">
                   {quality}%
                 </span>
@@ -75,7 +77,7 @@ export function ExportDialog({ open, onClose, onExport }: ExportDialogProps) {
               className="h-8 text-xs"
               onClick={onClose}
             >
-              Cancel
+              {messages.ui.dialogs.export.cancel}
             </Button>
             <Button
               size="sm"
@@ -85,7 +87,7 @@ export function ExportDialog({ open, onClose, onExport }: ExportDialogProps) {
                 onClose();
               }}
             >
-              Download
+              {messages.ui.dialogs.export.download}
             </Button>
           </div>
         </div>

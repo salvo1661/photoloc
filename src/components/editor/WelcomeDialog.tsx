@@ -4,9 +4,10 @@ import {
   DialogContent,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, MonitorSmartphone, Wifi, WifiOff } from "lucide-react";
+import { ShieldCheck, MonitorSmartphone, WifiOff } from "lucide-react";
+import type { Messages } from "@/i18n";
 
-export function WelcomeDialog() {
+export function WelcomeDialog({ messages }: { messages: Messages }) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -28,29 +29,28 @@ export function WelcomeDialog() {
           </div>
 
           <h2 className="text-lg font-semibold text-foreground mb-1.5">
-            Your Privacy is Protected
+            {messages.ui.dialogs.welcome.title}
           </h2>
           <p className="text-center text-sm text-muted-foreground leading-relaxed mb-6">
-            All image processing happens entirely in your browser.
-            Nothing is uploaded to any server — your files never leave your device.
+            {messages.ui.dialogs.welcome.body}
           </p>
 
           <div className="w-full space-y-3 mb-6">
             {[
               {
                 icon: MonitorSmartphone,
-                title: "100% Client-Side",
-                desc: "All edits run locally using your browser's Canvas API",
+                title: messages.ui.dialogs.welcome.feature1Title,
+                desc: messages.ui.dialogs.welcome.feature1Desc,
               },
               {
                 icon: WifiOff,
-                title: "No Server, No Upload",
-                desc: "Your images are never sent anywhere — works offline too",
+                title: messages.ui.dialogs.welcome.feature2Title,
+                desc: messages.ui.dialogs.welcome.feature2Desc,
               },
               {
                 icon: ShieldCheck,
-                title: "Complete Privacy",
-                desc: "No data collection, no tracking, no cloud storage",
+                title: messages.ui.dialogs.welcome.feature3Title,
+                desc: messages.ui.dialogs.welcome.feature3Desc,
               },
             ].map((item, i) => (
               <div
@@ -74,7 +74,7 @@ export function WelcomeDialog() {
             className="w-full h-9 text-sm"
             onClick={handleClose}
           >
-            Get Started
+            {messages.ui.dialogs.welcome.getStarted}
           </Button>
         </div>
       </DialogContent>

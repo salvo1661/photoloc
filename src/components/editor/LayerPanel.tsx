@@ -4,11 +4,14 @@ import { Slider } from "@/components/ui/slider";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { Layer } from "@/hooks/useImageEditor";
+import { formatLayerName } from "@/i18n";
+import type { Messages } from "@/i18n";
 
 interface LayerPanelProps {
   layers: Layer[];
   activeLayerId: string;
   hasImage: boolean;
+  messages: Messages;
   onSelectLayer: (id: string) => void;
   onToggleVisibility: (id: string) => void;
   onDeleteLayer: (id: string) => void;
@@ -22,6 +25,7 @@ export function LayerPanel({
   layers,
   activeLayerId,
   hasImage,
+  messages,
   onSelectLayer,
   onToggleVisibility,
   onDeleteLayer,
@@ -37,7 +41,7 @@ export function LayerPanel({
     <div className="border-t border-border">
       <div className="flex h-8 items-center justify-between border-b border-border bg-editor-panel-header px-3">
         <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Layers
+          {messages.ui.right.layers}
         </span>
         <Button
           variant="ghost"
@@ -45,7 +49,7 @@ export function LayerPanel({
           className="h-5 w-5 text-muted-foreground hover:text-foreground"
           onClick={onAddLayer}
           disabled={!hasImage}
-          title="Add Layer"
+          title={messages.ui.right.addLayer}
         >
           <Plus className="h-3 w-3" />
         </Button>
@@ -74,7 +78,7 @@ export function LayerPanel({
                     e.stopPropagation();
                     onToggleVisibility(layer.id);
                   }}
-                  title={layer.visible ? "Hide layer" : "Show layer"}
+                  title={layer.visible ? messages.ui.right.hideLayer : messages.ui.right.showLayer}
                 >
                   {layer.visible ? (
                     <Eye className="h-3 w-3" />
@@ -104,7 +108,7 @@ export function LayerPanel({
                     !layer.visible && "opacity-40"
                   )}
                 >
-                  {layer.name}
+                  {formatLayerName(messages, layer)}
                 </span>
 
                 {/* Opacity indicator */}
@@ -121,7 +125,7 @@ export function LayerPanel({
                         e.stopPropagation();
                         onReorder(realIndex, realIndex - 1);
                       }}
-                      title="Move down"
+                      title={messages.ui.right.moveDown}
                     >
                       <ChevronDown className="h-3 w-3" />
                     </button>
@@ -133,7 +137,7 @@ export function LayerPanel({
                         e.stopPropagation();
                         onReorder(realIndex, realIndex + 1);
                       }}
-                      title="Move up"
+                      title={messages.ui.right.moveUp}
                     >
                       <ChevronUp className="h-3 w-3" />
                     </button>
@@ -145,7 +149,7 @@ export function LayerPanel({
                         e.stopPropagation();
                         onMergeDown(layer.id);
                       }}
-                      title="Merge down"
+                      title={messages.ui.right.mergeDown}
                     >
                       <Merge className="h-3 w-3" />
                     </button>
@@ -157,7 +161,7 @@ export function LayerPanel({
                         e.stopPropagation();
                         onDeleteLayer(layer.id);
                       }}
-                      title="Delete layer"
+                      title={messages.ui.right.deleteLayer}
                     >
                       <Trash2 className="h-3 w-3" />
                     </button>
@@ -168,7 +172,7 @@ export function LayerPanel({
           })}
           {layers.length === 0 && (
             <p className="px-2 py-3 text-center text-[11px] text-muted-foreground">
-              No layers
+              {messages.ui.right.noLayers}
             </p>
           )}
         </div>
@@ -178,7 +182,7 @@ export function LayerPanel({
       {hasImage && activeLayerId && (
         <div className="border-t border-border px-3 py-2">
           <div className="mb-1 flex items-center justify-between">
-            <span className="text-[10px] text-muted-foreground">Opacity</span>
+            <span className="text-[10px] text-muted-foreground">{messages.ui.right.opacity}</span>
             <span className="font-mono text-[10px] text-muted-foreground">
               {Math.round((layers.find((l) => l.id === activeLayerId)?.opacity ?? 1) * 100)}%
             </span>

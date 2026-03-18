@@ -9,12 +9,14 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import type { Messages } from "@/i18n";
 
 interface TopToolbarProps {
   hasImage: boolean;
   canUndo: boolean;
   canRedo: boolean;
   zoom: number;
+  messages: Messages;
   onUpload: () => void;
   onExport: () => void;
   onUndo: () => void;
@@ -29,6 +31,7 @@ export function TopToolbar({
   canUndo,
   canRedo,
   zoom,
+  messages,
   onUpload,
   onExport,
   onUndo,
@@ -47,7 +50,7 @@ export function TopToolbar({
           onClick={onUpload}
         >
           <Upload className="h-3.5 w-3.5" />
-          Open
+          {messages.ui.toolbar.open}
         </Button>
         <Button
           variant="ghost"
@@ -57,7 +60,7 @@ export function TopToolbar({
           disabled={!hasImage}
         >
           <Download className="h-3.5 w-3.5" />
-          Export
+          {messages.ui.toolbar.export}
         </Button>
       </div>
 
@@ -70,7 +73,7 @@ export function TopToolbar({
           className="h-7 w-7 text-foreground hover:bg-editor-hover"
           onClick={onUndo}
           disabled={!canUndo}
-          title="Undo (Ctrl+Z)"
+          title={messages.ui.toolbar.undoTitle}
         >
           <Undo2 className="h-3.5 w-3.5" />
         </Button>
@@ -80,7 +83,7 @@ export function TopToolbar({
           className="h-7 w-7 text-foreground hover:bg-editor-hover"
           onClick={onRedo}
           disabled={!canRedo}
-          title="Redo (Ctrl+Shift+Z)"
+          title={messages.ui.toolbar.redoTitle}
         >
           <Redo2 className="h-3.5 w-3.5" />
         </Button>
@@ -116,7 +119,7 @@ export function TopToolbar({
           className="h-7 w-7 text-foreground hover:bg-editor-hover"
           onClick={onZoomFit}
           disabled={!hasImage}
-          title="Fit to screen"
+          title={messages.ui.toolbar.fitToScreen}
         >
           <Maximize className="h-3.5 w-3.5" />
         </Button>
@@ -124,7 +127,7 @@ export function TopToolbar({
 
       <div className="ml-auto">
         <span className="font-mono text-[10px] tracking-wider text-muted-foreground">
-          IMAGE EDITOR
+          {messages.ui.toolbar.imageEditor}
         </span>
       </div>
     </div>

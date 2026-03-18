@@ -8,6 +8,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Lock, Unlock } from "lucide-react";
+import { formatTemplate } from "@/i18n";
+import type { Messages } from "@/i18n";
 
 interface ResizeDialogProps {
   open: boolean;
@@ -15,6 +17,7 @@ interface ResizeDialogProps {
   imageHeight: number;
   onClose: () => void;
   onApply: (w: number, h: number) => void;
+  messages: Messages;
 }
 
 export function ResizeDialog({
@@ -23,6 +26,7 @@ export function ResizeDialog({
   imageHeight,
   onClose,
   onApply,
+  messages,
 }: ResizeDialogProps) {
   const [width, setWidth] = useState(imageWidth);
   const [height, setHeight] = useState(imageHeight);
@@ -48,13 +52,13 @@ export function ResizeDialog({
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="border-border bg-card sm:max-w-xs">
         <DialogHeader>
-          <DialogTitle className="text-sm">Resize Image</DialogTitle>
+          <DialogTitle className="text-sm">{messages.ui.dialogs.resize.title}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
           <div className="flex items-end gap-2">
             <div className="flex-1">
               <label className="mb-1 block text-xs text-muted-foreground">
-                Width
+                {messages.ui.dialogs.resize.width}
               </label>
               <Input
                 type="number"
@@ -69,7 +73,7 @@ export function ResizeDialog({
               size="icon"
               className="h-8 w-8 text-muted-foreground"
               onClick={() => setLockRatio(!lockRatio)}
-              title={lockRatio ? "Unlock aspect ratio" : "Lock aspect ratio"}
+              title={lockRatio ? messages.ui.dialogs.resize.unlockAspect : messages.ui.dialogs.resize.lockAspect}
             >
               {lockRatio ? (
                 <Lock className="h-3.5 w-3.5" />
@@ -79,7 +83,7 @@ export function ResizeDialog({
             </Button>
             <div className="flex-1">
               <label className="mb-1 block text-xs text-muted-foreground">
-                Height
+                {messages.ui.dialogs.resize.height}
               </label>
               <Input
                 type="number"
@@ -92,7 +96,12 @@ export function ResizeDialog({
           </div>
 
           <p className="text-center font-mono text-[10px] text-muted-foreground">
-            {imageWidth} × {imageHeight} → {width} × {height}
+            {formatTemplate(messages.ui.dialogs.resize.fromTo, {
+              fromW: imageWidth,
+              fromH: imageHeight,
+              toW: width,
+              toH: height,
+            })}
           </p>
 
           <div className="flex justify-end gap-2 pt-2">
@@ -102,7 +111,7 @@ export function ResizeDialog({
               className="h-8 text-xs"
               onClick={onClose}
             >
-              Cancel
+              {messages.ui.dialogs.resize.cancel}
             </Button>
             <Button
               size="sm"
@@ -114,7 +123,7 @@ export function ResizeDialog({
                 }
               }}
             >
-              Apply
+              {messages.ui.dialogs.resize.apply}
             </Button>
           </div>
         </div>
