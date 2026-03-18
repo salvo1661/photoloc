@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" height="1024" width="1024">
+  <rect fill="#0f172a" rx="256" height="1024" width="1024"></rect>
+  
+  
+  <rect fill="#1e293b" rx="80" height="400" width="600" y="312" x="212"></rect>
+  <rect opacity="0.6" fill="url(#grad1)" rx="80" height="400" width="600" y="312" x="212"></rect>
+  
+  
+  <circle fill="#111827" r="220" cy="512" cx="512"></circle>
+  <circle fill="#0ea5e9" r="180" cy="512" cx="512"></circle>
+  <circle fill="#7dd3fc" r="140" cy="512" cx="512"></circle>
+  <circle opacity="0.15" fill="#ffffff" r="100" cy="512" cx="512"></circle>
+  
+  
+  <circle opacity="0.4" fill="white" r="40" cy="420" cx="620"></circle>
+  
+  <defs>
+    <radialGradient cy="30%" cx="50%" id="grad1">
+      <stop stop-opacity="0.08" stop-color="#ffffff" offset="0%"></stop>
+      <stop stop-opacity="0.3" stop-color="#000000" offset="100%"></stop>
+    </radialGradient>
+  </defs>
+</svg>
