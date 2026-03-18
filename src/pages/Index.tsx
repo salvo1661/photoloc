@@ -9,10 +9,16 @@ import { ExportDialog } from "@/components/editor/ExportDialog";
 import { ResizeDialog } from "@/components/editor/ResizeDialog";
 import { WelcomeDialog } from "@/components/editor/WelcomeDialog";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import { useParams, useLocation, Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { supportedLanguages, languageNames, getMessages } from "../i18n";
-import { Check, X, Copy, Scissors, ClipboardPaste } from "lucide-react";
+import { Check, X, Copy, Scissors, ClipboardPaste, ChevronDown } from "lucide-react";
 import type { Adjustments } from "@/hooks/useImageEditor";
 
 const Index = () => {
@@ -54,10 +60,11 @@ const Index = () => {
   return (
     <>
       <Helmet>
-        <title>{msgs.title}</title>
-        <meta name="description" content={msgs.description} />
-        <meta property="og:title" content={msgs.title} />
-        <meta property="og:description" content={msgs.description} />
+        <html lang={currentLang} />
+        <title>{msgs.meta.title}</title>
+        <meta name="description" content={msgs.meta.description} />
+        <meta property="og:title" content={msgs.meta.title} />
+        <meta property="og:description" content={msgs.meta.description} />
         <link rel="canonical" href={`https://photo.localtool.tech${location.pathname}`} />
         {supportedLanguages.map((lang) => (
           <link
@@ -70,22 +77,34 @@ const Index = () => {
         <link rel="alternate" hrefLang="x-default" href="https://photo.localtool.tech/en" />
       </Helmet>
 
-      <div className="border-b border-border bg-muted p-2 text-sm">
-        <span className="font-semibold">{msgs.home}</span>
-        <span className="ml-3">·</span>
-        {supportedLanguages.map((lang) => (
-          <Link
-            key={lang}
-            to={`/${lang}${location.pathname.replace(/^\/(en|es|pt|fr|de|hi|ja|ko|id|ar|zh)/, "")}`}
-            className={`ml-2 rounded px-2 py-1 text-xs ${currentLang === lang ? "bg-primary text-primary-foreground" : "bg-background text-foreground"}`}
-          >
-            {languageNames[lang]}
-          </Link>
-        ))}
+      <div className="border-b border-border bg-muted px-3 py-2 text-sm">
+        <div className="flex items-center justify-between">
+          <span className="font-semibold">{msgs.meta.home}</span>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 gap-1 text-xs">
+                {languageNames[currentLang]}
+                <ChevronDown className="h-3.5 w-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {supportedLanguages.map((lang) => (
+                <DropdownMenuItem key={lang} asChild>
+                  <Link
+                    to={`/${lang}${location.pathname.replace(/^\/(en|es|pt|fr|de|hi|ja|ko|id|ar|zh)/, "")}`}
+                    className={currentLang === lang ? "font-semibold" : ""}
+                  >
+                    {languageNames[lang]}
+                  </Link>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       <div className="flex h-screen w-screen flex-col overflow-hidden bg-background">
-      <WelcomeDialog />
+      <WelcomeDialog messages={msgs} />
       <input
         ref={fileInputRef}
         type="file"
@@ -103,6 +122,7 @@ const Index = () => {
         canUndo={editor.canUndo}
         canRedo={editor.canRedo}
         zoom={editor.zoom}
+        messages={msgs}
         onUpload={handleUploadClick}
         onExport={() => setShowExport(true)}
         onUndo={editor.undo}
@@ -130,6 +150,7 @@ const Index = () => {
         <LeftSidebar
           activeTool={editor.activeTool}
           hasImage={editor.hasImage}
+          messages={msgs}
           onToolChange={handleToolChange}
           onRotateCW={() => editor.rotate("cw")}
           onRotateCCW={() => editor.rotate("ccw")}
@@ -142,14 +163,14 @@ const Index = () => {
           {editor.activeTool === "crop" && editor.cropRect && (
             <div className="absolute left-1/2 top-2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-md border border-border bg-card px-3 py-1.5 shadow-lg">
               <span className="font-mono text-[11px] text-muted-foreground">
-                {editor.cropRect.width} × {editor.cropRect.height}
+                {editor.cropRect.width} {msgs.ui.symbols.times} {editor.cropRect.height}
               </span>
               <Button
                 size="sm"
                 className="h-6 gap-1 px-2 text-[11px]"
                 onClick={editor.applyCrop}
               >
-                <Check className="h-3 w-3" /> Apply
+                <Check className="h-3 w-3" /> {msgs.ui.crop.apply}
               </Button>
               <Button
                 variant="ghost"
@@ -160,7 +181,7 @@ const Index = () => {
                   editor.setActiveTool("select");
                 }}
               >
-                <X className="h-3 w-3" /> Cancel
+                <X className="h-3 w-3" /> {msgs.ui.crop.cancel}
               </Button>
             </div>
           )}
@@ -171,21 +192,21 @@ const Index = () => {
               {editor.selectionRect && !editor.floatingSelection && (
                 <>
                   <span className="font-mono text-[11px] text-muted-foreground">
-                    {editor.selectionRect.width} × {editor.selectionRect.height}
+                    {editor.selectionRect.width} {msgs.ui.symbols.times} {editor.selectionRect.height}
                   </span>
                   <Button size="sm" className="h-6 gap-1 px-2 text-[11px]" onClick={editor.copySelection}>
-                    <Copy className="h-3 w-3" /> Copy
+                    <Copy className="h-3 w-3" /> {msgs.ui.marquee.copy}
                   </Button>
                   <Button size="sm" variant="secondary" className="h-6 gap-1 px-2 text-[11px]" onClick={editor.cutSelection}>
-                    <Scissors className="h-3 w-3" /> Cut
+                    <Scissors className="h-3 w-3" /> {msgs.ui.marquee.cut}
                   </Button>
                 </>
               )}
               {editor.floatingSelection && (
                 <>
-                  <span className="text-[11px] text-muted-foreground">Drag to move, then paste</span>
+                  <span className="text-[11px] text-muted-foreground">{msgs.ui.marquee.dragToMoveThenPaste}</span>
                   <Button size="sm" className="h-6 gap-1 px-2 text-[11px]" onClick={editor.pasteSelection}>
-                    <ClipboardPaste className="h-3 w-3" /> Paste
+                    <ClipboardPaste className="h-3 w-3" /> {msgs.ui.marquee.paste}
                   </Button>
                 </>
               )}
@@ -195,7 +216,7 @@ const Index = () => {
                 className="h-6 gap-1 px-2 text-[11px]"
                 onClick={editor.cancelSelection}
               >
-                <X className="h-3 w-3" /> Cancel
+                <X className="h-3 w-3" /> {msgs.ui.marquee.cancel}
               </Button>
             </div>
           )}
@@ -208,6 +229,7 @@ const Index = () => {
             activeTool={editor.activeTool}
             imageWidth={editor.imageWidth}
             imageHeight={editor.imageHeight}
+            messages={msgs}
             cropRect={editor.cropRect}
             onCropChange={editor.setCropRect}
             onLoadImage={editor.loadImage}
@@ -227,6 +249,7 @@ const Index = () => {
           backgroundColor={editor.backgroundColor}
           layers={editor.layers}
           activeLayerId={editor.activeLayerId}
+          messages={msgs}
           onAdjustmentChange={(key: keyof Adjustments, value: number) =>
             editor.setAdjustments((prev) => ({ ...prev, [key]: value }))
           }
@@ -250,12 +273,14 @@ const Index = () => {
         imageHeight={editor.imageHeight}
         zoom={editor.zoom}
         fileName={editor.fileName}
+        messages={msgs}
       />
 
       <ExportDialog
         open={showExport}
         onClose={() => setShowExport(false)}
         onExport={editor.exportImage}
+        messages={msgs}
       />
 
       <ResizeDialog
@@ -264,6 +289,7 @@ const Index = () => {
         imageHeight={editor.imageHeight}
         onClose={() => setShowResize(false)}
         onApply={editor.applyResize}
+        messages={msgs}
       />
     </div>
     </>
