@@ -1,6 +1,14 @@
 {
   "outputDirectory": "dist/client",
+  "functions": {
+    "api/ssr.ts": {
+      "includeFiles": "dist/server/**"
+    }
+  },
   "routes": [
+    {
+      "handle": "filesystem"
+    },
     {
       "src": "^/sitemap\\.xml$",
       "dest": "/api/ssr"
