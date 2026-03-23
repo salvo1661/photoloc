@@ -419,6 +419,7 @@ export function useImageEditor() {
       tempCanvas.height = imageHeight;
       const ctx = tempCanvas.getContext("2d");
       if (!ctx) return;
+      ctx.filter = buildFilterString(adjustments);
 
       const visibleLayers = layers.filter((l) => l.visible);
       let loaded = 0;

@@ -1,64 +1,82 @@
-# Welcome to your project
+# Photoloc
 
-## Project info
+Photoloc is a high-function Photoshop-style editor that runs entirely on your device. It is built for privacy-first editing, with all processing kept local in your browser.
 
-**URL**: REPLACE_WITH_PROJECT_URL
+Most online photo editors send images to servers, which creates privacy risk. Photoloc does not. Nothing is uploaded or transmitted during editing. If you want to verify this, open Chrome or IE and capture network traffic while editing; you will see that no image or editing data is sent to any server. The tradeoff is that performance can vary depending on your PC’s specs, and very large images may feel slower on lower-end machines.
 
-## How can I edit this code?
+## Features
+- On-device processing only (no uploads, no server-side editing)
+- Drag-and-drop or click to open images
+- Zoom controls with fit-to-screen
+- Pan/drag canvas navigation
+- Crop tool with live size readout
+- Resize tool with width/height controls
+- Rotate 90° clockwise and counterclockwise
+- Flip horizontal and vertical
+- Adjustment controls:
+  brightness, contrast, saturation, hue rotate, sepia, grayscale, blur
+- Non-destructive adjustments preview
+- Apply adjustments to bake them into the active layer
+- Marquee selection with:
+  copy, cut, paste, and floating selection move/resize
+- Layer system:
+  add/delete layers, rename, reorder, merge down, visibility toggle, opacity
+- Background color picker (including transparent)
+- History timeline with click-to-restore
+- Undo/redo with shortcuts
+- Export to PNG (lossless), JPEG, WebP with quality control
+- Multi-language UI with locale-aware routes
 
-There are several ways of editing your application.
+## Tech Stack
+- Vite + React + TypeScript
+- Tailwind CSS + shadcn-ui (Radix UI)
+- React Router
 
-**Use your preferred IDE**
+## Getting Started
 
-If you want to work locally using your own IDE, you can clone this repo and push changes.
+### Requirements
+- Node.js 18+ and npm
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
+### Install
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+npm install
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+### Run Dev Server
+```sh
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### Build
+```sh
+npm run build
+```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Preview
+```sh
+npm run preview
+```
 
-**Use GitHub Codespaces**
+### Lint
+```sh
+npm run lint
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Test
+```sh
+npm run test
+```
 
-## What technologies are used for this project?
+## Project Structure
+- `src/pages/Index.tsx` main editor page
+- `src/hooks/useImageEditor.ts` editor state and image operations
+- `src/components/editor` editor UI (toolbar, canvas, sidebars)
+- `src/i18n` localization resources
 
-This project is built with:
+## Contributing
+Photoloc is open source and we welcome contributions.
+- Report bugs and request features via issues
+- Submit pull requests for fixes, improvements, and translations
+- Keep changes focused and include a clear description
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Build and deploy with standard Vite build steps and your hosting provider.
-
-## Can I connect a custom domain to my project?
-
-Yes, follow your hosting provider’s domain setup documentation.
-
+Curated on [LeanVibe](https://leanvibe.io/vibe/photoloc)

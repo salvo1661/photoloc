@@ -75,6 +75,16 @@ export function EditorCanvas({
 
   const scale = zoom / 100;
 
+  useEffect(() => {
+    if (!hasImage) return;
+    const container = containerRef.current;
+    if (!container) return;
+    const maxScrollLeft = container.scrollWidth - container.clientWidth;
+    const maxScrollTop = container.scrollHeight - container.clientHeight;
+    if (maxScrollLeft > 0) container.scrollLeft = Math.max(0, maxScrollLeft / 2);
+    if (maxScrollTop > 0) container.scrollTop = Math.max(0, maxScrollTop / 2);
+  }, [hasImage, zoom, imageWidth, imageHeight]);
+
   // Crop interaction
   const getImageCoords = useCallback(
     (e: React.MouseEvent) => {
@@ -233,55 +243,32 @@ export function EditorCanvas({
       <div
         className="relative flex-shrink-0"
         style={{
-          transform: `scale(${scale})`,
-          transformOrigin: "top left",
+          width: imageWidth * scale,
+          height: imageHeight * scale,
           margin: "20px",
         }}
-        onMouseDown={(e) => {
-          if (activeTool === "crop") {
-            handleMouseDown(e);
-            e.stopPropagation();
-          } else if (activeTool === "marquee") {
-            e.stopPropagation();
-            if (floatingSelection) {
-              const coords = getImageCoords(e);
-              if (!coords) return;
-              // Check resize handles on floating selection
-              const handleSize = 8 / scale;
-              const r = floatingSelection.rect;
-              const fHandles: Record<string, { x: number; y: number }> = {
-                nw: { x: r.x, y: r.y },
-                ne: { x: r.x + r.width, y: r.y },
-                sw: { x: r.x, y: r.y + r.height },
-                se: { x: r.x + r.width, y: r.y + r.height },
-                n: { x: r.x + r.width / 2, y: r.y },
-                s: { x: r.x + r.width / 2, y: r.y + r.height },
-                w: { x: r.x, y: r.y + r.height / 2 },
-                e: { x: r.x + r.width, y: r.y + r.height / 2 },
-              };
-              for (const [key, pos] of Object.entries(fHandles)) {
-                if (Math.abs(coords.x - pos.x) <= handleSize && Math.abs(coords.y - pos.y) <= handleSize) {
-                  setResizeHandle(key);
-                  setResizeStart({ x: coords.x, y: coords.y, rect: { ...r } });
-                  setIsResizingFloat(true);
-                  return;
-                }
-              }
-              // Check if clicking inside floating to drag
-              if (r.x <= coords.x && coords.x <= r.x + r.width &&
-                  r.y <= coords.y && coords.y <= r.y + r.height) {
-                setIsDraggingFloat(true);
-                setFloatDragOffset({ x: coords.x - r.x, y: coords.y - r.y });
-                return;
-              }
-            }
-            // Check if clicking a resize handle
-            if (selectionRect && !floatingSelection) {
-              const coords = getImageCoords(e);
-              if (coords) {
+      >
+        <div
+          className="relative"
+          style={{
+            width: imageWidth,
+            height: imageHeight,
+            transform: `scale(${scale})`,
+            transformOrigin: "top left",
+          }}
+          onMouseDown={(e) => {
+            if (activeTool === "crop") {
+              handleMouseDown(e);
+              e.stopPropagation();
+            } else if (activeTool === "marquee") {
+              e.stopPropagation();
+              if (floatingSelection) {
+                const coords = getImageCoords(e);
+                if (!coords) return;
+                // Check resize handles on floating selection
                 const handleSize = 8 / scale;
-                const r = selectionRect;
-                const handles: Record<string, { x: number; y: number }> = {
+                const r = floatingSelection.rect;
+                const fHandles: Record<string, { x: number; y: number }> = {
                   nw: { x: r.x, y: r.y },
                   ne: { x: r.x + r.width, y: r.y },
                   sw: { x: r.x, y: r.y + r.height },
@@ -291,207 +278,240 @@ export function EditorCanvas({
                   w: { x: r.x, y: r.y + r.height / 2 },
                   e: { x: r.x + r.width, y: r.y + r.height / 2 },
                 };
-                for (const [key, pos] of Object.entries(handles)) {
+                for (const [key, pos] of Object.entries(fHandles)) {
                   if (Math.abs(coords.x - pos.x) <= handleSize && Math.abs(coords.y - pos.y) <= handleSize) {
                     setResizeHandle(key);
                     setResizeStart({ x: coords.x, y: coords.y, rect: { ...r } });
+                    setIsResizingFloat(true);
                     return;
                   }
                 }
+                // Check if clicking inside floating to drag
+                if (r.x <= coords.x && coords.x <= r.x + r.width &&
+                    r.y <= coords.y && coords.y <= r.y + r.height) {
+                  setIsDraggingFloat(true);
+                  setFloatDragOffset({ x: coords.x - r.x, y: coords.y - r.y });
+                  return;
+                }
+              }
+              // Check if clicking a resize handle
+              if (selectionRect && !floatingSelection) {
+                const coords = getImageCoords(e);
+                if (coords) {
+                  const handleSize = 8 / scale;
+                  const r = selectionRect;
+                  const handles: Record<string, { x: number; y: number }> = {
+                    nw: { x: r.x, y: r.y },
+                    ne: { x: r.x + r.width, y: r.y },
+                    sw: { x: r.x, y: r.y + r.height },
+                    se: { x: r.x + r.width, y: r.y + r.height },
+                    n: { x: r.x + r.width / 2, y: r.y },
+                    s: { x: r.x + r.width / 2, y: r.y + r.height },
+                    w: { x: r.x, y: r.y + r.height / 2 },
+                    e: { x: r.x + r.width, y: r.y + r.height / 2 },
+                  };
+                  for (const [key, pos] of Object.entries(handles)) {
+                    if (Math.abs(coords.x - pos.x) <= handleSize && Math.abs(coords.y - pos.y) <= handleSize) {
+                      setResizeHandle(key);
+                      setResizeStart({ x: coords.x, y: coords.y, rect: { ...r } });
+                      return;
+                    }
+                  }
+                }
+              }
+              const coords = getImageCoords(e);
+              if (!coords) return;
+              setMarqueeStart(coords);
+              onSelectionChange(null);
+            }
+          }}
+          onMouseMove={(e) => {
+            if (activeTool === "crop") {
+              handleMouseMove(e);
+            } else if (activeTool === "marquee") {
+              if (isDraggingFloat && floatDragOffset) {
+                const coords = getImageCoords(e);
+                if (coords) {
+                  onMoveFloatingSelection(coords.x - floatDragOffset.x, coords.y - floatDragOffset.y);
+                }
+              } else if (isResizingFloat && resizeHandle && resizeStart) {
+                const coords = getImageCoords(e);
+                if (!coords) return;
+                const orig = resizeStart.rect;
+                let newX = orig.x, newY = orig.y, newW = orig.width, newH = orig.height;
+                if (resizeHandle.includes("e")) { newW = Math.max(4, orig.width + (coords.x - resizeStart.x)); }
+                if (resizeHandle.includes("w")) { newW = Math.max(4, orig.width - (coords.x - resizeStart.x)); newX = orig.x + (coords.x - resizeStart.x); }
+                if (resizeHandle.includes("s")) { newH = Math.max(4, orig.height + (coords.y - resizeStart.y)); }
+                if (resizeHandle.includes("n")) { newH = Math.max(4, orig.height - (coords.y - resizeStart.y)); newY = orig.y + (coords.y - resizeStart.y); }
+                onResizeFloatingSelection({ x: Math.round(newX), y: Math.round(newY), width: Math.round(newW), height: Math.round(newH) });
+              } else if (resizeHandle && resizeStart) {
+                const coords = getImageCoords(e);
+                if (!coords) return;
+                const orig = resizeStart.rect;
+                let newX = orig.x, newY = orig.y, newW = orig.width, newH = orig.height;
+                if (resizeHandle.includes("e")) { newW = Math.max(4, orig.width + (coords.x - resizeStart.x)); }
+                if (resizeHandle.includes("w")) { newW = Math.max(4, orig.width - (coords.x - resizeStart.x)); newX = orig.x + (coords.x - resizeStart.x); }
+                if (resizeHandle.includes("s")) { newH = Math.max(4, orig.height + (coords.y - resizeStart.y)); }
+                if (resizeHandle.includes("n")) { newH = Math.max(4, orig.height - (coords.y - resizeStart.y)); newY = orig.y + (coords.y - resizeStart.y); }
+                onSelectionChange({ x: Math.round(newX), y: Math.round(newY), width: Math.round(newW), height: Math.round(newH) });
+              } else if (marqueeStart) {
+                const coords = getImageCoords(e);
+                if (!coords) return;
+                const x = Math.min(marqueeStart.x, coords.x);
+                const y = Math.min(marqueeStart.y, coords.y);
+                const w = Math.abs(coords.x - marqueeStart.x);
+                const h = Math.abs(coords.y - marqueeStart.y);
+                if (w > 2 && h > 2) {
+                  onSelectionChange({ x, y, width: w, height: h });
+                }
               }
             }
-            const coords = getImageCoords(e);
-            if (!coords) return;
-            setMarqueeStart(coords);
-            onSelectionChange(null);
-          }
-        }}
-        onMouseMove={(e) => {
-          if (activeTool === "crop") {
-            handleMouseMove(e);
-          } else if (activeTool === "marquee") {
-            if (isDraggingFloat && floatDragOffset) {
-              const coords = getImageCoords(e);
-              if (coords) {
-                onMoveFloatingSelection(coords.x - floatDragOffset.x, coords.y - floatDragOffset.y);
-              }
-            } else if (isResizingFloat && resizeHandle && resizeStart) {
-              const coords = getImageCoords(e);
-              if (!coords) return;
-              const orig = resizeStart.rect;
-              let newX = orig.x, newY = orig.y, newW = orig.width, newH = orig.height;
-              if (resizeHandle.includes("e")) { newW = Math.max(4, orig.width + (coords.x - resizeStart.x)); }
-              if (resizeHandle.includes("w")) { newW = Math.max(4, orig.width - (coords.x - resizeStart.x)); newX = orig.x + (coords.x - resizeStart.x); }
-              if (resizeHandle.includes("s")) { newH = Math.max(4, orig.height + (coords.y - resizeStart.y)); }
-              if (resizeHandle.includes("n")) { newH = Math.max(4, orig.height - (coords.y - resizeStart.y)); newY = orig.y + (coords.y - resizeStart.y); }
-              onResizeFloatingSelection({ x: Math.round(newX), y: Math.round(newY), width: Math.round(newW), height: Math.round(newH) });
-            } else if (resizeHandle && resizeStart) {
-              const coords = getImageCoords(e);
-              if (!coords) return;
-              const orig = resizeStart.rect;
-              let newX = orig.x, newY = orig.y, newW = orig.width, newH = orig.height;
-              if (resizeHandle.includes("e")) { newW = Math.max(4, orig.width + (coords.x - resizeStart.x)); }
-              if (resizeHandle.includes("w")) { newW = Math.max(4, orig.width - (coords.x - resizeStart.x)); newX = orig.x + (coords.x - resizeStart.x); }
-              if (resizeHandle.includes("s")) { newH = Math.max(4, orig.height + (coords.y - resizeStart.y)); }
-              if (resizeHandle.includes("n")) { newH = Math.max(4, orig.height - (coords.y - resizeStart.y)); newY = orig.y + (coords.y - resizeStart.y); }
-              onSelectionChange({ x: Math.round(newX), y: Math.round(newY), width: Math.round(newW), height: Math.round(newH) });
-            } else if (marqueeStart) {
-              const coords = getImageCoords(e);
-              if (!coords) return;
-              const x = Math.min(marqueeStart.x, coords.x);
-              const y = Math.min(marqueeStart.y, coords.y);
-              const w = Math.abs(coords.x - marqueeStart.x);
-              const h = Math.abs(coords.y - marqueeStart.y);
-              if (w > 2 && h > 2) {
-                onSelectionChange({ x, y, width: w, height: h });
-              }
+          }}
+          onMouseUp={() => {
+            if (activeTool === "crop") {
+              handleMouseUp();
+            } else if (activeTool === "marquee") {
+              setMarqueeStart(null);
+              setIsDraggingFloat(false);
+              setFloatDragOffset(null);
+              setResizeHandle(null);
+              setResizeStart(null);
+              setIsResizingFloat(false);
             }
-          }
-        }}
-        onMouseUp={() => {
-          if (activeTool === "crop") {
-            handleMouseUp();
-          } else if (activeTool === "marquee") {
-            setMarqueeStart(null);
-            setIsDraggingFloat(false);
-            setFloatDragOffset(null);
-            setResizeHandle(null);
-            setResizeStart(null);
-            setIsResizingFloat(false);
-          }
-        }}
-        onMouseLeave={() => {
-          if (activeTool === "crop") {
-            handleMouseUp();
-          } else if (activeTool === "marquee") {
-            setMarqueeStart(null);
-            setIsDraggingFloat(false);
-            setFloatDragOffset(null);
-            setResizeHandle(null);
-            setResizeStart(null);
-            setIsResizingFloat(false);
-          }
-        }}
-      >
-        <canvas
-          ref={canvasRef}
-          style={{ filter: filterStyle, imageRendering: zoom > 200 ? "pixelated" : "auto" }}
-          className="block shadow-2xl"
-        />
+          }}
+          onMouseLeave={() => {
+            if (activeTool === "crop") {
+              handleMouseUp();
+            } else if (activeTool === "marquee") {
+              setMarqueeStart(null);
+              setIsDraggingFloat(false);
+              setFloatDragOffset(null);
+              setResizeHandle(null);
+              setResizeStart(null);
+              setIsResizingFloat(false);
+            }
+          }}
+        >
+          <canvas
+            ref={canvasRef}
+            style={{ filter: filterStyle, imageRendering: zoom > 200 ? "pixelated" : "auto" }}
+            className="block shadow-2xl"
+          />
 
-        {/* Crop overlay */}
-        {activeTool === "crop" && cropRect && (
-          <>
+          {/* Crop overlay */}
+          {activeTool === "crop" && cropRect && (
+            <>
+              <div
+                className="pointer-events-none absolute inset-0 bg-black/50"
+                style={{
+                  clipPath: `polygon(
+                    0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%,
+                    ${cropRect.x}px ${cropRect.y}px,
+                    ${cropRect.x}px ${cropRect.y + cropRect.height}px,
+                    ${cropRect.x + cropRect.width}px ${cropRect.y + cropRect.height}px,
+                    ${cropRect.x + cropRect.width}px ${cropRect.y}px,
+                    ${cropRect.x}px ${cropRect.y}px
+                  )`,
+                }}
+              />
+              <div
+                className="pointer-events-none absolute border border-white/80"
+                style={{
+                  left: cropRect.x,
+                  top: cropRect.y,
+                  width: cropRect.width,
+                  height: cropRect.height,
+                }}
+              >
+                <div className="absolute left-1/3 top-0 h-full w-px bg-white/30" />
+                <div className="absolute left-2/3 top-0 h-full w-px bg-white/30" />
+                <div className="absolute left-0 top-1/3 h-px w-full bg-white/30" />
+                <div className="absolute left-0 top-2/3 h-px w-full bg-white/30" />
+                {[
+                  "top-0 left-0 -translate-x-1/2 -translate-y-1/2",
+                  "top-0 right-0 translate-x-1/2 -translate-y-1/2",
+                  "bottom-0 left-0 -translate-x-1/2 translate-y-1/2",
+                  "bottom-0 right-0 translate-x-1/2 translate-y-1/2",
+                ].map((pos, i) => (
+                  <div
+                    key={i}
+                    className={`absolute h-2.5 w-2.5 rounded-sm border-2 border-white bg-editor-active ${pos}`}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* Marquee selection overlay with resize handles */}
+          {activeTool === "marquee" && selectionRect && !floatingSelection && (
             <div
-              className="pointer-events-none absolute inset-0 bg-black/50"
+              className="absolute border-2 border-dashed border-editor-active"
               style={{
-                clipPath: `polygon(
-                  0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%,
-                  ${cropRect.x}px ${cropRect.y}px,
-                  ${cropRect.x}px ${cropRect.y + cropRect.height}px,
-                  ${cropRect.x + cropRect.width}px ${cropRect.y + cropRect.height}px,
-                  ${cropRect.x + cropRect.width}px ${cropRect.y}px,
-                  ${cropRect.x}px ${cropRect.y}px
-                )`,
-              }}
-            />
-            <div
-              className="pointer-events-none absolute border border-white/80"
-              style={{
-                left: cropRect.x,
-                top: cropRect.y,
-                width: cropRect.width,
-                height: cropRect.height,
+                left: selectionRect.x,
+                top: selectionRect.y,
+                width: selectionRect.width,
+                height: selectionRect.height,
+                pointerEvents: "none",
               }}
             >
-              <div className="absolute left-1/3 top-0 h-full w-px bg-white/30" />
-              <div className="absolute left-2/3 top-0 h-full w-px bg-white/30" />
-              <div className="absolute left-0 top-1/3 h-px w-full bg-white/30" />
-              <div className="absolute left-0 top-2/3 h-px w-full bg-white/30" />
+              {/* Resize handles */}
               {[
-                "top-0 left-0 -translate-x-1/2 -translate-y-1/2",
-                "top-0 right-0 translate-x-1/2 -translate-y-1/2",
-                "bottom-0 left-0 -translate-x-1/2 translate-y-1/2",
-                "bottom-0 right-0 translate-x-1/2 translate-y-1/2",
-              ].map((pos, i) => (
+                { pos: "nw", style: { top: -4, left: -4, cursor: "nw-resize" } },
+                { pos: "ne", style: { top: -4, right: -4, cursor: "ne-resize" } },
+                { pos: "sw", style: { bottom: -4, left: -4, cursor: "sw-resize" } },
+                { pos: "se", style: { bottom: -4, right: -4, cursor: "se-resize" } },
+                { pos: "n", style: { top: -4, left: "calc(50% - 4px)", cursor: "n-resize" } },
+                { pos: "s", style: { bottom: -4, left: "calc(50% - 4px)", cursor: "s-resize" } },
+                { pos: "w", style: { top: "calc(50% - 4px)", left: -4, cursor: "w-resize" } },
+                { pos: "e", style: { top: "calc(50% - 4px)", right: -4, cursor: "e-resize" } },
+              ].map((h) => (
                 <div
-                  key={i}
-                  className={`absolute h-2.5 w-2.5 rounded-sm border-2 border-white bg-editor-active ${pos}`}
+                  key={h.pos}
+                  className="absolute h-2 w-2 rounded-sm border border-white bg-editor-active"
+                  style={{ ...h.style, pointerEvents: "auto" } as React.CSSProperties}
                 />
               ))}
             </div>
-          </>
-        )}
+          )}
 
-        {/* Marquee selection overlay with resize handles */}
-        {activeTool === "marquee" && selectionRect && !floatingSelection && (
-          <div
-            className="absolute border-2 border-dashed border-editor-active"
-            style={{
-              left: selectionRect.x,
-              top: selectionRect.y,
-              width: selectionRect.width,
-              height: selectionRect.height,
-              pointerEvents: "none",
-            }}
-          >
-            {/* Resize handles */}
-            {[
-              { pos: "nw", style: { top: -4, left: -4, cursor: "nw-resize" } },
-              { pos: "ne", style: { top: -4, right: -4, cursor: "ne-resize" } },
-              { pos: "sw", style: { bottom: -4, left: -4, cursor: "sw-resize" } },
-              { pos: "se", style: { bottom: -4, right: -4, cursor: "se-resize" } },
-              { pos: "n", style: { top: -4, left: "calc(50% - 4px)", cursor: "n-resize" } },
-              { pos: "s", style: { bottom: -4, left: "calc(50% - 4px)", cursor: "s-resize" } },
-              { pos: "w", style: { top: "calc(50% - 4px)", left: -4, cursor: "w-resize" } },
-              { pos: "e", style: { top: "calc(50% - 4px)", right: -4, cursor: "e-resize" } },
-            ].map((h) => (
-              <div
-                key={h.pos}
-                className="absolute h-2 w-2 rounded-sm border border-white bg-editor-active"
-                style={{ ...h.style, pointerEvents: "auto" } as React.CSSProperties}
+          {/* Floating selection with resize handles */}
+          {activeTool === "marquee" && floatingSelection && (
+            <div
+              className="absolute cursor-move border-2 border-dashed border-accent"
+              style={{
+                left: floatingSelection.rect.x,
+                top: floatingSelection.rect.y,
+                width: floatingSelection.rect.width,
+                height: floatingSelection.rect.height,
+              }}
+            >
+              <img
+                src={floatingSelection.imageData}
+                alt="selection"
+                className="pointer-events-none h-full w-full"
+                style={{ objectFit: "fill" }}
+                draggable={false}
               />
-            ))}
-          </div>
-        )}
-
-        {/* Floating selection with resize handles */}
-        {activeTool === "marquee" && floatingSelection && (
-          <div
-            className="absolute cursor-move border-2 border-dashed border-accent"
-            style={{
-              left: floatingSelection.rect.x,
-              top: floatingSelection.rect.y,
-              width: floatingSelection.rect.width,
-              height: floatingSelection.rect.height,
-            }}
-          >
-            <img
-              src={floatingSelection.imageData}
-              alt="selection"
-              className="pointer-events-none h-full w-full"
-              style={{ objectFit: "fill" }}
-              draggable={false}
-            />
-            {/* Resize handles */}
-            {[
-              { pos: "nw", style: { top: -4, left: -4, cursor: "nw-resize" } },
-              { pos: "ne", style: { top: -4, right: -4, cursor: "ne-resize" } },
-              { pos: "sw", style: { bottom: -4, left: -4, cursor: "sw-resize" } },
-              { pos: "se", style: { bottom: -4, right: -4, cursor: "se-resize" } },
-              { pos: "n", style: { top: -4, left: "calc(50% - 4px)", cursor: "n-resize" } },
-              { pos: "s", style: { bottom: -4, left: "calc(50% - 4px)", cursor: "s-resize" } },
-              { pos: "w", style: { top: "calc(50% - 4px)", left: -4, cursor: "w-resize" } },
-              { pos: "e", style: { top: "calc(50% - 4px)", right: -4, cursor: "e-resize" } },
-            ].map((h) => (
-              <div
-                key={h.pos}
-                className="absolute h-2 w-2 rounded-sm border border-white bg-accent"
-                style={{ ...h.style, pointerEvents: "auto" } as React.CSSProperties}
-              />
-            ))}
-          </div>
-        )}
+              {/* Resize handles */}
+              {[
+                { pos: "nw", style: { top: -4, left: -4, cursor: "nw-resize" } },
+                { pos: "ne", style: { top: -4, right: -4, cursor: "ne-resize" } },
+                { pos: "sw", style: { bottom: -4, left: -4, cursor: "sw-resize" } },
+                { pos: "se", style: { bottom: -4, right: -4, cursor: "se-resize" } },
+                { pos: "n", style: { top: -4, left: "calc(50% - 4px)", cursor: "n-resize" } },
+                { pos: "s", style: { bottom: -4, left: "calc(50% - 4px)", cursor: "s-resize" } },
+                { pos: "w", style: { top: "calc(50% - 4px)", left: -4, cursor: "w-resize" } },
+                { pos: "e", style: { top: "calc(50% - 4px)", right: -4, cursor: "e-resize" } },
+              ].map((h) => (
+                <div
+                  key={h.pos}
+                  className="absolute h-2 w-2 rounded-sm border border-white bg-accent"
+                  style={{ ...h.style, pointerEvents: "auto" } as React.CSSProperties}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
