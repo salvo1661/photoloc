@@ -21,6 +21,8 @@ import { it } from "./lang/it";
 import { nl } from "./lang/nl";
 import { tr } from "./lang/tr";
 import { fa } from "./lang/fa";
+import { ru } from "./lang/ru";
+import { bn } from "./lang/bn";
 
 export { type HistoryLabelKey, type HistoryLabelParams, type LayerNameKey, type Messages };
 
@@ -41,25 +43,29 @@ export const supportedLanguages = [
   "fa",
   "it",
   "nl",
+  "ru",
+  "bn",
 ];
 
 export const languageNames: Record<string, string> = {
-  zh: "中文",
+  zh: "ä¸­æ",
   en: "English",
-  hi: "हिन्दी",
-  es: "Español",
-  ar: "العربية",
-  pt: "Português",
+  hi: "à¤¹à¤¿à¤¨à¥à¤¦à¥",
+  es: "EspaÃ±ol",
+  ar: "Ø§ÙØ¹Ø±Ø¨ÙØ©",
+  pt: "PortuguÃªs",
   id: "Bahasa Indonesia",
-  fr: "Français",
+  fr: "FranÃ§ais",
   de: "Deutsch",
-  ja: "日本語",
-  ko: "한국어",
-  vi: "Tiếng Việt",
-  tr: "Türkçe",
-  fa: "فارسی",
+  ja: "æ¥æ¬èª",
+  ko: "íêµ­ì´",
+  vi: "Tiáº¿ng Viá»t",
+  tr: "TÃ¼rkÃ§e",
+  fa: "ÙØ§Ø±Ø³Û",
   it: "Italiano",
   nl: "Nederlands",
+  ru: "Ð ÑÑÑÐºÐ¸Ð¹",
+  bn: "\u09ac\u09be\u0982\u09b2\u09be",
 };
 
 const overrides: Record<string, DeepPartial<Messages>> = {
@@ -78,6 +84,8 @@ const overrides: Record<string, DeepPartial<Messages>> = {
   fa,
   it,
   nl,
+  ru,
+  bn,
 };
 
 const isObject = (value: unknown): value is Record<string, unknown> => {
