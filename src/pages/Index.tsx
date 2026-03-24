@@ -18,7 +18,7 @@ import {
 import { useParams, useLocation, Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { supportedLanguages, languageNames, getMessages } from "../i18n";
-import { Check, X, Copy, Scissors, ClipboardPaste, ChevronDown } from "lucide-react";
+import { Check, X, Copy, Scissors, ClipboardPaste, ChevronDown, Github } from "lucide-react";
 import type { Adjustments } from "@/hooks/useImageEditor";
 
 const Index = () => {
@@ -80,26 +80,50 @@ const Index = () => {
       <div className="border-b border-border bg-muted px-3 py-2 text-sm">
         <div className="flex items-center justify-between">
           <span className="font-semibold">{msgs.meta.home}</span>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 gap-1 text-xs">
-                {languageNames[currentLang]}
-                <ChevronDown className="h-3.5 w-3.5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {supportedLanguages.map((lang) => (
-                <DropdownMenuItem key={lang} asChild>
-                  <Link
-                    to={`/${lang}${location.pathname.replace(/^\/(en|es|pt|fr|de|hi|ja|ko|id|ar|zh|vi|it|nl|tr|fa)/, "")}`}
-                    className={currentLang === lang ? "font-semibold" : ""}
-                  >
-                    {languageNames[lang]}
-                  </Link>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex items-center gap-2">
+            <a
+              href="https://github.com/salvo1661/photoloc"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-card px-2.5 text-[11px] font-semibold text-foreground shadow-sm transition hover:bg-accent hover:text-accent-foreground"
+            >
+              <Github className="h-3.5 w-3.5" />
+              Open Source Project
+            </a>
+            <a
+              href="https://leanvibe.io/vibe/photoloc"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-card px-2.5 text-[11px] font-semibold text-foreground shadow-sm transition hover:bg-accent hover:text-accent-foreground"
+            >
+              <img
+                src="https://leanvibe.io/favicon-32x32.png"
+                alt="LeanVibe"
+                className="h-3.5 w-3.5"
+              />
+              Listed on LeanVibe
+            </a>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8 gap-1 text-xs">
+                  {languageNames[currentLang]}
+                  <ChevronDown className="h-3.5 w-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {supportedLanguages.map((lang) => (
+                  <DropdownMenuItem key={lang} asChild>
+                    <Link
+                      to={`/${lang}${location.pathname.replace(/^\/(en|es|pt|fr|de|hi|ja|ko|id|ar|zh|vi|it|nl|tr|fa)/, "")}`}
+                      className={currentLang === lang ? "font-semibold" : ""}
+                    >
+                      {languageNames[lang]}
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
 
