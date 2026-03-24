@@ -33,6 +33,7 @@ export const ko: DeepPartial<Messages> = {
       dropHere: "여기에 이미지를 놓거나 클릭하여 업로드",
       supports: "PNG, JPG, WEBP, BMP, GIF 지원",
       dropToReplace: "놓으면 이미지가 교체됩니다",
+      loading: "이미지 불러오는 중...",
     },
     right: {
       adjustments: "조정",

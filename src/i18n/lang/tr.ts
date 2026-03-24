@@ -33,6 +33,7 @@ export const tr: DeepPartial<Messages> = {
       dropHere: "Görseli buraya bırakın veya yüklemek için tıklayın",
       supports: "PNG, JPG, WEBP, BMP, GIF desteklenir",
       dropToReplace: "Görseli değiştirmek için bırakın",
+      loading: "Görsel yükleniyor...",
     },
     right: {
       adjustments: "Ayarlar",

@@ -78,6 +78,7 @@ export function useImageEditor() {
   const [selectionRect, setSelectionRect] = useState<CropRect | null>(null);
   const [floatingSelection, setFloatingSelection] = useState<SelectionData | null>(null);
   const [backgroundColor, setBackgroundColor] = useState("#ffffff");
+  const [isLoading, setIsLoading] = useState(false);
 
   // Layer state
   const [layers, setLayers] = useState<Layer[]>([]);
@@ -179,22 +180,41 @@ export function useImageEditor() {
   // Load image from file
   const loadImage = useCallback(
     (file: File) => {
+      setIsLoading(true);
+      const finishLoading = () => setIsLoading(false);
       const reader = new FileReader();
+      reader.onerror = () => {
+        finishLoading();
+      };
       reader.onload = (e) => {
+        const result = e.target?.result;
+        if (!result) {
+          finishLoading();
+          return;
+        }
         const img = new Image();
+        img.onerror = () => {
+          finishLoading();
+        };
         img.onload = () => {
           setFileName(file.name);
           setAdjustments({ ...DEFAULT_ADJUSTMENTS });
 
           const canvas = canvasRef.current;
-          if (!canvas) return;
+          if (!canvas) {
+            finishLoading();
+            return;
+          }
 
           // Create temp canvas to get data URL
           const tempCanvas = document.createElement("canvas");
           tempCanvas.width = img.width;
           tempCanvas.height = img.height;
           const tempCtx = tempCanvas.getContext("2d");
-          if (!tempCtx) return;
+          if (!tempCtx) {
+            finishLoading();
+            return;
+          }
           tempCtx.drawImage(img, 0, 0);
           const imageData = tempCanvas.toDataURL("image/png");
 
@@ -247,8 +267,9 @@ export function useImageEditor() {
           setIsCropping(false);
           setSelectionRect(null);
           setFloatingSelection(null);
+          finishLoading();
         };
-        img.src = e.target?.result as string;
+        img.src = result as string;
       };
       reader.readAsDataURL(file);
     },
@@ -786,6 +807,7 @@ export function useImageEditor() {
     setFloatingSelection,
     backgroundColor,
     setBackgroundColor,
+    isLoading,
     layers,
     activeLayerId,
     setActiveLayerId,

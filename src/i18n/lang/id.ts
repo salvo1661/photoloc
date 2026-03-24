@@ -33,6 +33,7 @@ export const id: DeepPartial<Messages> = {
       dropHere: "Letakkan gambar di sini atau klik untuk mengunggah",
       supports: "Mendukung PNG, JPG, WEBP, BMP, GIF",
       dropToReplace: "Letakkan untuk mengganti gambar",
+      loading: "Memuat gambar...",
     },
     right: {
       adjustments: "Penyesuaian",

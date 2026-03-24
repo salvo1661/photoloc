@@ -33,6 +33,7 @@ export const hi: DeepPartial<Messages> = {
       dropHere: "यहाँ छवि छोड़ें या अपलोड करने के लिए क्लिक करें",
       supports: "PNG, JPG, WEBP, BMP, GIF समर्थित",
       dropToReplace: "छवि बदलने के लिए छोड़ें",
+      loading: "छवि लोड हो रही है...",
     },
     right: {
       adjustments: "समायोजन",

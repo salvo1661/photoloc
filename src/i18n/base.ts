@@ -33,6 +33,7 @@ export const baseMessages: Messages = {
       dropHere: "Drop an image here or click to upload",
       supports: "Supports PNG, JPG, WEBP, BMP, GIF",
       dropToReplace: "Drop to replace image",
+      loading: "Loading image...",
     },
     right: {
       adjustments: "Adjustments",

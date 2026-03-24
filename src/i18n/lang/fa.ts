@@ -33,6 +33,7 @@ export const fa: DeepPartial<Messages> = {
       dropHere: "تصویر را اینجا رها کنید یا برای بارگذاری کلیک کنید",
       supports: "PNG، JPG، WEBP، BMP، GIF پشتیبانی می‌شود",
       dropToReplace: "برای جایگزینی تصویر رها کنید",
+      loading: "در حال بارگذاری تصویر...",
     },
     right: {
       adjustments: "تنظیمات",

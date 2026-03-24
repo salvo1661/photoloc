@@ -33,6 +33,7 @@ export const ar: DeepPartial<Messages> = {
       dropHere: "أسقط صورة هنا أو انقر للتحميل",
       supports: "يدعم PNG وJPG وWEBP وBMP وGIF",
       dropToReplace: "أسقط لاستبدال الصورة",
+      loading: "جارٍ تحميل الصورة...",
     },
     right: {
       adjustments: "الضبط",

@@ -33,6 +33,7 @@ export const vi: DeepPartial<Messages> = {
       dropHere: "Thả ảnh vào đây hoặc bấm để tải lên",
       supports: "Hỗ trợ PNG, JPG, WEBP, BMP, GIF",
       dropToReplace: "Thả để thay ảnh",
+      loading: "Đang tải ảnh...",
     },
     right: {
       adjustments: "Điều chỉnh",

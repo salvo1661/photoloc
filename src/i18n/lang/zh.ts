@@ -33,6 +33,7 @@ export const zh: DeepPartial<Messages> = {
       dropHere: "将图像拖放到此处或点击上传",
       supports: "支持 PNG, JPG, WEBP, BMP, GIF",
       dropToReplace: "拖放以替换图像",
+      loading: "正在加载图片...",
     },
     right: {
       adjustments: "调整",

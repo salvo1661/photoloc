@@ -12,6 +12,7 @@ interface EditorCanvasProps {
   imageWidth: number;
   imageHeight: number;
   messages: Messages;
+  isLoading: boolean;
   cropRect: CropRect | null;
   onCropChange: (rect: CropRect | null) => void;
   onLoadImage: (file: File) => void;
@@ -31,6 +32,7 @@ export function EditorCanvas({
   imageWidth,
   imageHeight,
   messages,
+  isLoading,
   cropRect,
   onCropChange,
   onLoadImage,
@@ -137,7 +139,7 @@ export function EditorCanvas({
   if (!hasImage) {
     return (
       <div
-        className="flex flex-1 items-center justify-center bg-editor-workspace"
+        className="relative flex flex-1 items-center justify-center bg-editor-workspace"
         onDragOver={(e) => {
           e.preventDefault();
           setIsDragging(true);
@@ -176,6 +178,14 @@ export function EditorCanvas({
             </p>
           </div>
         </div>
+        {isLoading && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-editor-workspace/80">
+            <div className="flex flex-col items-center gap-3 rounded-lg border border-border bg-card/90 px-5 py-4 shadow-lg">
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-muted-foreground/40 border-t-editor-active" />
+              <p className="text-sm text-muted-foreground">{messages.ui.canvas.loading}</p>
+            </div>
+          </div>
+        )}
         <canvas ref={canvasRef} className="hidden" />
       </div>
     );
@@ -236,6 +246,14 @@ export function EditorCanvas({
           <div className="flex flex-col items-center gap-2 rounded-lg border-2 border-dashed border-editor-active p-8">
             <Upload className="h-8 w-8 text-editor-active" />
             <p className="text-sm text-editor-active">{messages.ui.canvas.dropToReplace}</p>
+          </div>
+        </div>
+      )}
+      {isLoading && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-editor-workspace/80">
+          <div className="flex flex-col items-center gap-3 rounded-lg border border-border bg-card/90 px-5 py-4 shadow-lg">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-muted-foreground/40 border-t-editor-active" />
+            <p className="text-sm text-muted-foreground">{messages.ui.canvas.loading}</p>
           </div>
         </div>
       )}

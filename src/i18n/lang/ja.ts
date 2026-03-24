@@ -33,6 +33,7 @@ export const ja: DeepPartial<Messages> = {
       dropHere: "ここに画像をドロップするかクリックしてアップロード",
       supports: "PNG, JPG, WEBP, BMP, GIF に対応",
       dropToReplace: "ドロップして画像を置き換え",
+      loading: "画像を読み込んでいます...",
     },
     right: {
       adjustments: "調整",

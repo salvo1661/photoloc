@@ -54,6 +54,7 @@ export type Messages = {
       dropHere: string;
       supports: string;
       dropToReplace: string;
+      loading: string;
     };
     right: {
       adjustments: string;

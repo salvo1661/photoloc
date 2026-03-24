@@ -33,6 +33,7 @@ export const nl: DeepPartial<Messages> = {
       dropHere: "Sleep een afbeelding hierheen of klik om te uploaden",
       supports: "Ondersteunt PNG, JPG, WEBP, BMP, GIF",
       dropToReplace: "Laat los om de afbeelding te vervangen",
+      loading: "Afbeelding wordt geladen...",
     },
     right: {
       adjustments: "Aanpassingen",

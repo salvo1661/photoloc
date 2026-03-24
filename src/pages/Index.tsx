@@ -230,6 +230,7 @@ const Index = () => {
             imageWidth={editor.imageWidth}
             imageHeight={editor.imageHeight}
             messages={msgs}
+            isLoading={editor.isLoading}
             cropRect={editor.cropRect}
             onCropChange={editor.setCropRect}
             onLoadImage={editor.loadImage}

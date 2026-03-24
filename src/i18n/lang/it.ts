@@ -33,6 +33,7 @@ export const it: DeepPartial<Messages> = {
       dropHere: "Trascina qui un'immagine o fai clic per caricarla",
       supports: "Supporta PNG, JPG, WEBP, BMP, GIF",
       dropToReplace: "Rilascia per sostituire l'immagine",
+      loading: "Caricamento immagine...",
     },
     right: {
       adjustments: "Regolazioni",
