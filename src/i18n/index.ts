@@ -28,6 +28,7 @@ import { pl } from "./lang/pl";
 import { th } from "./lang/th";
 import { ur } from "./lang/ur";
 import { sw } from "./lang/sw";
+import { ta } from "./lang/ta";
 
 export { type HistoryLabelKey, type HistoryLabelParams, type LayerNameKey, type Messages };
 
@@ -55,6 +56,7 @@ export const supportedLanguages = [
   "th",
   "ur",
   "sw",
+  "ta",
 ];
 
 export const languageNames: Record<string, string> = {
@@ -81,6 +83,7 @@ export const languageNames: Record<string, string> = {
   th: "ไทย",
   ur: "اردو",
   sw: "Kiswahili",
+  ta: "தமிழ்",
 };
 
 const overrides: Record<string, DeepPartial<Messages>> = {
@@ -106,6 +109,7 @@ const overrides: Record<string, DeepPartial<Messages>> = {
   th,
   ur,
   sw,
+  ta,
 };
 
 const isObject = (value: unknown): value is Record<string, unknown> => {
