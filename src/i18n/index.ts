@@ -24,6 +24,7 @@ import { fa } from "./lang/fa";
 import { ru } from "./lang/ru";
 import { bn } from "./lang/bn";
 import { uk } from "./lang/uk";
+import { pl } from "./lang/pl";
 
 export { type HistoryLabelKey, type HistoryLabelParams, type LayerNameKey, type Messages };
 
@@ -47,6 +48,7 @@ export const supportedLanguages = [
   "ru",
   "bn",
   "uk",
+  "pl",
 ];
 
 export const languageNames: Record<string, string> = {
@@ -69,6 +71,7 @@ export const languageNames: Record<string, string> = {
   ru: "Ð ÑÑÑÐºÐ¸Ð¹",
   bn: "?????",
   uk: "??????????",
+  pl: "Polski",
 };
 
 const overrides: Record<string, DeepPartial<Messages>> = {
@@ -90,6 +93,7 @@ const overrides: Record<string, DeepPartial<Messages>> = {
   ru,
   bn,
   uk,
+  pl,
 };
 
 const isObject = (value: unknown): value is Record<string, unknown> => {
