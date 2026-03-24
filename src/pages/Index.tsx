@@ -71,7 +71,7 @@ const Index = () => {
             key={lang}
             rel="alternate"
             hrefLang={lang}
-            href={`https://photo.localtool.tech/${lang}${location.pathname.replace(/^\/(en|es|pt|fr|de|hi|ja|ko|id|ar|zh)/, "")}`}
+            href={`https://photo.localtool.tech/${lang}${location.pathname.replace(/^\/(en|es|pt|fr|de|hi|ja|ko|id|ar|zh|vi|it|nl|tr|fa)/, "")}`}
           />
         ))}
         <link rel="alternate" hrefLang="x-default" href="https://photo.localtool.tech/en" />
@@ -91,7 +91,7 @@ const Index = () => {
               {supportedLanguages.map((lang) => (
                 <DropdownMenuItem key={lang} asChild>
                   <Link
-                    to={`/${lang}${location.pathname.replace(/^\/(en|es|pt|fr|de|hi|ja|ko|id|ar|zh)/, "")}`}
+                    to={`/${lang}${location.pathname.replace(/^\/(en|es|pt|fr|de|hi|ja|ko|id|ar|zh|vi|it|nl|tr|fa)/, "")}`}
                     className={currentLang === lang ? "font-semibold" : ""}
                   >
                     {languageNames[lang]}

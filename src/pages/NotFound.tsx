@@ -4,7 +4,7 @@ import { supportedLanguages, languageNames, getMessages } from "../i18n";
 
 const NotFound = () => {
   const location = useLocation();
-  const langMatch = location.pathname.match(/^\/(en|es|pt|fr|de|hi|ja|ko|id|ar|zh)/);
+  const langMatch = location.pathname.match(/^\/(en|es|pt|fr|de|hi|ja|ko|id|ar|zh|vi|it|nl|tr|fa)/);
   const lang = langMatch?.[1] ?? "en";
   const msgs = getMessages(lang);
 
