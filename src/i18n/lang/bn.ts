@@ -2,7 +2,7 @@ import type { DeepPartial, Messages } from "../types";
 
 export const bn: DeepPartial<Messages> = {
   meta: {
-    title: "চিত্র সম্পাদক",
+    title: "ফটোলক | বিনামূল্যের অনলাইন চিত্র সম্পাদক",
     description: "গোপনীয়তাকে গুরুত্ব দিয়ে ব্রাউজারভিত্তিক চিত্র সম্পাদক।",
     home: "Photoloc",
     subTitle: "ক্লায়েন্ট-সাইডে চিত্র ক্রপ, রিসাইজ, রোটেট, অ্যাডজাস্ট ও এক্সপোর্ট করুন।",

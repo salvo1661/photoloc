@@ -2,7 +2,7 @@ import type { DeepPartial, Messages } from "../types";
 
 export const ko: DeepPartial<Messages> = {
   meta: {
-    title: "이미지 편집기",
+    title: "포토록 | 무료 온라인 이미지 편집기",
     description: "개인정보 보호 중심의 브라우저 기반 이미지 편집기입니다.",
     home: "Photoloc",
     subTitle: "자르기, 크기 조정, 회전, 조정, 클라이언트 측 내보내기.",

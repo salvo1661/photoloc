@@ -2,7 +2,7 @@ import type { DeepPartial, Messages } from "../types";
 
 export const fa: DeepPartial<Messages> = {
   meta: {
-    title: "ویرایشگر تصویر",
+    title: "فوتولوک | ویرایشگر تصویر آنلاین رایگان",
     description: "ویرایشگر تصویر مبتنی بر مرورگر با طراحی اولویت‌دار برای حریم خصوصی.",
     home: "Photoloc",
     subTitle: "برش، تغییر اندازه، چرخاندن، تنظیم و خروجی گرفتن از تصاویر در مرورگر.",

@@ -2,7 +2,7 @@ import type { DeepPartial, Messages } from "../types";
 
 export const ur: DeepPartial<Messages> = {
   meta: {
-    title: "تصویری ایڈیٹر",
+    title: "فوٹولاک | مفت آن لائن تصویری ایڈیٹر",
     description: "رازداری کو ترجیح دینے والا براؤزر پر مبنی تصویری ایڈیٹر۔",
     home: "Photoloc",
     subTitle: "کلائنٹ سائیڈ پر تصاویر کو کراپ، ری سائز، گھمائیں، ایڈجسٹ اور ایکسپورٹ کریں۔",

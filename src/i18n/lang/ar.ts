@@ -2,7 +2,7 @@ import type { DeepPartial, Messages } from "../types";
 
 export const ar: DeepPartial<Messages> = {
   meta: {
-    title: "محرر الصور",
+    title: "فوتولوك | محرر صور مجاني عبر الإنترنت",
     description: "محرر صور يعمل في المتصفح بتصميم يركز على الخصوصية.",
     home: "Photoloc",
     subTitle: "قص، تغيير الحجم، تدوير، ضبط وتصدير الصور على جانب العميل.",

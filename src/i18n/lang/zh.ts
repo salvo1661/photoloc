@@ -2,7 +2,7 @@ import type { DeepPartial, Messages } from "../types";
 
 export const zh: DeepPartial<Messages> = {
   meta: {
-    title: "图像编辑器",
+    title: "Photoloc | 免费在线图像编辑器",
     description: "注重隐私的浏览器端图像编辑器。",
     home: "Photoloc",
     subTitle: "裁剪、调整大小、旋转、调整并在客户端导出图像。",

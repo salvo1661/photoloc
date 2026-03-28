@@ -2,7 +2,7 @@ import type { DeepPartial, Messages } from "../types";
 
 export const it: DeepPartial<Messages> = {
   meta: {
-    title: "Editor di immagini",
+    title: "Photoloc | Editor di immagini online gratuito",
     description: "Un editor di immagini nel browser con design orientato alla privacy.",
     home: "Photoloc",
     subTitle: "Ritaglia, ridimensiona, ruota, regola ed esporta le immagini nel browser.",

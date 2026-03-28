@@ -64,7 +64,9 @@ const Index = () => {
         <title>{msgs.meta.title}</title>
         <meta name="description" content={msgs.meta.description} />
         <meta property="og:title" content={msgs.meta.title} />
+        <meta name="twitter:title" content={msgs.meta.title} />
         <meta property="og:description" content={msgs.meta.description} />
+        <meta name="twitter:description" content={msgs.meta.description} />
         <link rel="canonical" href={`https://photo.localtool.tech${location.pathname}`} />
         {supportedLanguages.map((lang) => (
           <link

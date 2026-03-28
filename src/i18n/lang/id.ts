@@ -2,7 +2,7 @@ import type { DeepPartial, Messages } from "../types";
 
 export const id: DeepPartial<Messages> = {
   meta: {
-    title: "Editor Gambar",
+    title: "Photoloc | Editor Gambar Online Gratis",
     description: "Editor gambar berbasis browser dengan desain mengutamakan privasi.",
     home: "Photoloc",
     subTitle: "Potong, ubah ukuran, putar, sesuaikan, dan ekspor gambar di sisi klien.",

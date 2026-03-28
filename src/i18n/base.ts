@@ -2,7 +2,7 @@ import type { Messages } from "./types";
 
 export const baseMessages: Messages = {
   meta: {
-    title: "Image Editor",
+    title: "Photoloc | Free Online Image Editor",
     description: "A browser-based image editor with privacy-first design.",
     home: "Photoloc",
     subTitle: "Crop, resize, rotate, adjust, and export images client-side.",

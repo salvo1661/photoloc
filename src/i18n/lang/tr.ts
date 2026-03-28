@@ -2,7 +2,7 @@ import type { DeepPartial, Messages } from "../types";
 
 export const tr: DeepPartial<Messages> = {
   meta: {
-    title: "Görsel düzenleyici",
+    title: "Photoloc | Ücretsiz çevrimiçi görsel düzenleyici",
     description: "Gizlilik öncelikli tasarıma sahip tarayıcı tabanlı bir görsel düzenleyici.",
     home: "Photoloc",
     subTitle: "Görselleri tarayıcıda kırpın, yeniden boyutlandırın, döndürün, ayarlayın ve dışa aktarın.",

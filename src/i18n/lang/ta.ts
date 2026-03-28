@@ -2,7 +2,7 @@ import type { DeepPartial, Messages } from "../types";
 
 export const ta: DeepPartial<Messages> = {
   meta: {
-    title: "படத் தொகுப்பி",
+    title: "போட்டோலாக் | இலவச ஆன்லைன் படத் தொகுப்பி",
     description: "தனியுரிமையை முன்னிலைப்படுத்தும் உலாவி சார்ந்த படத் தொகுப்பி.",
     home: "Photoloc",
     subTitle: "படங்களை வெட்டி, அளவை மாற்றி, சுழற்றி, சரிசெய்து, கிளையன்ட் பக்கத்தில் ஏற்றுமதி செய்யுங்கள்.",

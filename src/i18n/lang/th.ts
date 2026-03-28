@@ -2,7 +2,7 @@ import type { DeepPartial, Messages } from "../types";
 
 export const th: DeepPartial<Messages> = {
   meta: {
-    title: "โปรแกรมแก้ไขรูปภาพ",
+    title: "โฟโต้ล็อก | โปรแกรมแก้ไขรูปภาพออนไลน์ฟรี",
     description: "โปรแกรมแก้ไขรูปภาพบนเบราว์เซอร์ที่ให้ความสำคัญกับความเป็นส่วนตัว",
     home: "Photoloc",
     subTitle: "ครอป ปรับขนาด หมุน ปรับแต่ง และส่งออกภาพบนฝั่งไคลเอนต์",

@@ -2,7 +2,7 @@ import type { DeepPartial, Messages } from "../types";
 
 export const ru: DeepPartial<Messages> = {
   meta: {
-    title: "Редактор изображений",
+    title: "Фотолок | Бесплатный онлайн-редактор изображений",
     description: "Браузерный редактор изображений с приоритетом конфиденциальности.",
     home: "Photoloc",
     subTitle: "Обрезайте, изменяйте размер, поворачивайте, настраивайте и экспортируйте изображения на стороне клиента.",

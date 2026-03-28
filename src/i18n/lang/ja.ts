@@ -2,7 +2,7 @@ import type { DeepPartial, Messages } from "../types";
 
 export const ja: DeepPartial<Messages> = {
   meta: {
-    title: "画像エディター",
+    title: "フォトロック | 無料オンライン画像エディター",
     description: "プライバシー重視のブラウザベース画像エディターです。",
     home: "Photoloc",
     subTitle: "切り抜き、リサイズ、回転、調整、クライアント側で書き出し。",

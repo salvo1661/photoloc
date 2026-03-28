@@ -2,7 +2,7 @@ import type { DeepPartial, Messages } from "../types";
 
 export const vi: DeepPartial<Messages> = {
   meta: {
-    title: "Trình chỉnh sửa ảnh",
+    title: "Photoloc | Trình chỉnh sửa ảnh trực tuyến miễn phí",
     description: "Trình chỉnh sửa ảnh trên trình duyệt với thiết kế ưu tiên quyền riêng tư.",
     home: "Photoloc",
     subTitle: "Cắt, đổi kích thước, xoay, điều chỉnh và xuất ảnh trực tiếp trên trình duyệt.",

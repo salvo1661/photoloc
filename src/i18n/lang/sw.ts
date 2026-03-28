@@ -2,7 +2,7 @@ import type { DeepPartial, Messages } from "../types";
 
 export const sw: DeepPartial<Messages> = {
   meta: {
-    title: "Kihariri cha Picha",
+    title: "Photoloc | Kihariri cha Picha cha Mtandaoni Bila Malipo",
     description: "Kihariri cha picha kinachotumia kivinjari na kinachotanguliza faragha.",
     home: "Photoloc",
     subTitle: "Kata, badilisha ukubwa, zungusha, rekebisha, na hamisha picha upande wa mteja.",
