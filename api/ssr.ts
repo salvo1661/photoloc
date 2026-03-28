@@ -3,6 +3,37 @@ import path from "path";
 import { pathToFileURL } from "url";
 
 const supportedLanguages = ["en", "es", "pt", "fr", "de", "hi", "ja", "ko", "id", "ar", "zh", "ru", "bn", "uk", "pl", "th", "ur", "sw", "ta"];
+const fallbackLanguage = "en";
+
+const negotiateLanguage = (headerValue: unknown): string => {
+  const raw = typeof headerValue === "string" ? headerValue : "";
+  if (!raw) return fallbackLanguage;
+
+  const weighted = raw
+    .split(",")
+    .map((part, index) => {
+      const [tagPart, ...params] = part.trim().split(";");
+      const tag = tagPart.toLowerCase();
+      if (!tag || tag === "*") return null;
+      const qParam = params.find((p) => p.trim().startsWith("q="));
+      const q = qParam ? Number.parseFloat(qParam.trim().slice(2)) : 1;
+      const weight = Number.isFinite(q) ? q : 1;
+      return { tag, weight, index };
+    })
+    .filter((item): item is { tag: string; weight: number; index: number } => item !== null)
+    .sort((a, b) => {
+      if (b.weight !== a.weight) return b.weight - a.weight;
+      return a.index - b.index;
+    });
+
+  for (const item of weighted) {
+    if (supportedLanguages.includes(item.tag)) return item.tag;
+    const primary = item.tag.split("-")[0];
+    if (supportedLanguages.includes(primary)) return primary;
+  }
+
+  return fallbackLanguage;
+};
 
 const getContentType = (filePath: string) => {
   const ext = path.extname(filePath).toLowerCase();
@@ -49,6 +80,16 @@ export default async function handler(req: any, res: any) {
     const url = req?.url ?? "/";
     const pathname = url.split("?")[0] || "/";
     const root = process.cwd();
+    const query = url.includes("?") ? url.slice(url.indexOf("?")) : "";
+
+    if (pathname === "/") {
+      const lang = negotiateLanguage(req?.headers?.["accept-language"]);
+      res.statusCode = 307;
+      res.setHeader("Vary", "Accept-Language");
+      res.setHeader("Location", `/${lang}${query}`);
+      res.end();
+      return;
+    }
 
     if (pathname === "/sitemap.xml") {
       const host = "https://photo.localtool.tech";
@@ -89,7 +130,7 @@ export default async function handler(req: any, res: any) {
     html = html.replace("</head>", `${helmetTitle}${helmetMeta}${helmetLink}</head>`);
 
     res.statusCode = 200;
-    res.setHeader("Content-Type", "text/html");
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.end(html);
   } catch (error) {
     console.error(error);

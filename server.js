@@ -8,7 +8,38 @@ const port = process.env.PORT || 4173;
 
 app.use(express.static(path.join(root, "dist/client"), { index: false }));
 
-const supportedLanguages = ["en","es","pt","fr","de","hi","ja","ko","id","ar","zh"];
+const supportedLanguages = ["en", "es", "pt", "fr", "de", "hi", "ja", "ko", "id", "ar", "zh", "ru", "bn", "uk", "pl", "th", "ur", "sw", "ta"];
+const fallbackLanguage = "en";
+
+const negotiateLanguage = (headerValue) => {
+  const raw = typeof headerValue === "string" ? headerValue : "";
+  if (!raw) return fallbackLanguage;
+
+  const weighted = raw
+    .split(",")
+    .map((part, index) => {
+      const [tagPart, ...params] = part.trim().split(";");
+      const tag = tagPart.toLowerCase();
+      if (!tag || tag === "*") return null;
+      const qParam = params.find((p) => p.trim().startsWith("q="));
+      const q = qParam ? Number.parseFloat(qParam.trim().slice(2)) : 1;
+      const weight = Number.isFinite(q) ? q : 1;
+      return { tag, weight, index };
+    })
+    .filter((item) => item !== null)
+    .sort((a, b) => {
+      if (b.weight !== a.weight) return b.weight - a.weight;
+      return a.index - b.index;
+    });
+
+  for (const item of weighted) {
+    if (supportedLanguages.includes(item.tag)) return item.tag;
+    const primary = item.tag.split("-")[0];
+    if (supportedLanguages.includes(primary)) return primary;
+  }
+
+  return fallbackLanguage;
+};
 
 app.get("/sitemap.xml", (req, res) => {
   const host = "https://photo.localtool.tech";
@@ -30,6 +61,14 @@ app.get("/sitemap.xml", (req, res) => {
 
 app.get("*", async (req, res) => {
   try {
+    if (req.path === "/") {
+      const lang = negotiateLanguage(req.get("accept-language"));
+      const query = req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : "";
+      res.set("Vary", "Accept-Language");
+      res.redirect(307, `/${lang}${query}`);
+      return;
+    }
+
     const url = req.originalUrl;
     const template = fs.readFileSync(path.join(root, "dist/client/index.html"), "utf-8");
 
@@ -48,7 +87,7 @@ app.get("*", async (req, res) => {
       html = html.replace(/<html[^>]*>/i, `<html ${helmetHtmlAttrs}>`);
     }
 
-    res.status(200).set({ "Content-Type": "text/html" }).send(html);
+    res.status(200).set({ "Content-Type": "text/html; charset=utf-8" }).send(html);
   } catch (error) {
     console.error(error);
     res.status(500).send("Internal Server Error");
