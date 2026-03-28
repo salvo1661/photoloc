@@ -49,7 +49,8 @@ const DEFAULT_ADJUSTMENTS: Adjustments = {
   blur: 0,
 };
 
-export type ActiveTool = "select" | "crop" | "resize" | "rotate" | "marquee";
+export type ActiveTool = "select" | "crop" | "resize" | "rotate" | "marquee" | "pen";
+export type StrokePoint = { x: number; y: number };
 
 export interface SelectionData {
   rect: CropRect;
@@ -79,6 +80,9 @@ export function useImageEditor() {
   const [floatingSelection, setFloatingSelection] = useState<SelectionData | null>(null);
   const [backgroundColor, setBackgroundColor] = useState("#ffffff");
   const [isLoading, setIsLoading] = useState(false);
+  const [brushColor, setBrushColor] = useState("#111111");
+  const [brushSize, setBrushSize] = useState(8);
+  const [brushSpread, setBrushSpread] = useState(0);
 
   // Layer state
   const [layers, setLayers] = useState<Layer[]>([]);
@@ -412,24 +416,118 @@ export function useImageEditor() {
     });
   }, [cropRect, applyToActiveLayer]);
 
-  // Resize active layer
+  // Resize the whole document (all layers + canvas)
   const applyResize = useCallback(
     (newWidth: number, newHeight: number) => {
-      applyToActiveLayer(
-        "resizeTo",
-        (img) => {
-          const canvas = document.createElement("canvas");
-          canvas.width = newWidth;
-          canvas.height = newHeight;
-          const ctx = canvas.getContext("2d");
-          if (!ctx) return null;
-          ctx.drawImage(img, 0, 0, newWidth, newHeight);
-          return { canvas, w: newWidth, h: newHeight };
-        },
-        { width: newWidth, height: newHeight }
-      );
+      if (!layers.length) return;
+
+      const resizeLayer = (layer: Layer) =>
+        new Promise<Layer>((resolve) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement("canvas");
+            canvas.width = newWidth;
+            canvas.height = newHeight;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) {
+              resolve({ ...layer, width: newWidth, height: newHeight });
+              return;
+            }
+            ctx.drawImage(img, 0, 0, newWidth, newHeight);
+            resolve({
+              ...layer,
+              imageData: canvas.toDataURL("image/png"),
+              width: newWidth,
+              height: newHeight,
+            });
+          };
+          img.onerror = () => {
+            resolve({ ...layer, width: newWidth, height: newHeight });
+          };
+          img.src = layer.imageData;
+        });
+
+      Promise.all(layers.map(resizeLayer)).then((newLayers) => {
+        setLayers(newLayers);
+        pushHistory("resizeTo", newLayers, activeLayerId, newWidth, newHeight, {
+          width: newWidth,
+          height: newHeight,
+        });
+        compositeAndRender(newLayers, newWidth, newHeight);
+      });
     },
-    [applyToActiveLayer]
+    [layers, activeLayerId, pushHistory, compositeAndRender]
+  );
+
+  const drawStroke = useCallback(
+    (points: StrokePoint[]) => {
+      if (!points.length) return;
+      const layerData = getActiveLayerData();
+      if (!layerData) return;
+
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = imageWidth;
+        canvas.height = imageHeight;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        ctx.drawImage(img, 0, 0, imageWidth, imageHeight);
+        ctx.strokeStyle = brushColor;
+        ctx.fillStyle = brushColor;
+        ctx.lineWidth = brushSize;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        if (brushSpread > 0) {
+          ctx.shadowColor = brushColor;
+          ctx.shadowBlur = brushSpread;
+        }
+
+        if (points.length === 1) {
+          ctx.beginPath();
+          ctx.arc(points[0].x, points[0].y, Math.max(brushSize / 2, 1), 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.beginPath();
+          ctx.moveTo(points[0].x, points[0].y);
+          for (let i = 1; i < points.length; i += 1) {
+            ctx.lineTo(points[i].x, points[i].y);
+          }
+          ctx.stroke();
+        }
+
+        ctx.shadowBlur = 0;
+
+        const newImageData = canvas.toDataURL("image/png");
+        const newLayers = layers.map((l) =>
+          l.id === activeLayerId
+            ? {
+                ...l,
+                imageData: newImageData,
+                width: imageWidth,
+                height: imageHeight,
+              }
+            : l
+        );
+        setLayers(newLayers);
+        pushHistory("drawStroke", newLayers, activeLayerId, imageWidth, imageHeight);
+        compositeAndRender(newLayers, imageWidth, imageHeight);
+      };
+      img.src = layerData;
+    },
+    [
+      getActiveLayerData,
+      imageWidth,
+      imageHeight,
+      brushColor,
+      brushSize,
+      brushSpread,
+      layers,
+      activeLayerId,
+      pushHistory,
+      compositeAndRender,
+    ]
   );
 
   // Export - composite all visible layers
@@ -808,6 +906,12 @@ export function useImageEditor() {
     backgroundColor,
     setBackgroundColor,
     isLoading,
+    brushColor,
+    setBrushColor,
+    brushSize,
+    setBrushSize,
+    brushSpread,
+    setBrushSpread,
     layers,
     activeLayerId,
     setActiveLayerId,
@@ -822,6 +926,7 @@ export function useImageEditor() {
     flip,
     applyCrop,
     applyResize,
+    drawStroke,
     exportImage,
     flattenAdjustments,
     resetAdjustments,

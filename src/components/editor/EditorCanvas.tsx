@@ -21,6 +21,10 @@ interface EditorCanvasProps {
   floatingSelection: SelectionData | null;
   onMoveFloatingSelection: (x: number, y: number) => void;
   onResizeFloatingSelection: (rect: CropRect) => void;
+  brushColor: string;
+  brushSize: number;
+  brushSpread: number;
+  onDrawStroke: (points: Array<{ x: number; y: number }>) => void;
 }
 
 export function EditorCanvas({
@@ -41,6 +45,10 @@ export function EditorCanvas({
   floatingSelection,
   onMoveFloatingSelection,
   onResizeFloatingSelection,
+  brushColor,
+  brushSize,
+  brushSpread,
+  onDrawStroke,
 }: EditorCanvasProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -54,6 +62,8 @@ export function EditorCanvas({
   const [isResizingFloat, setIsResizingFloat] = useState(false);
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState<{ x: number; y: number; scrollLeft: number; scrollTop: number } | null>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const strokePointsRef = useRef<Array<{ x: number; y: number }>>([]);
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
@@ -136,6 +146,30 @@ export function EditorCanvas({
     setCropStart(null);
   }, []);
 
+  const drawPreviewSegment = useCallback(
+    (from: { x: number; y: number }, to: { x: number; y: number }) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      ctx.save();
+      ctx.strokeStyle = brushColor;
+      ctx.lineWidth = brushSize;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      if (brushSpread > 0) {
+        ctx.shadowColor = brushColor;
+        ctx.shadowBlur = brushSpread;
+      }
+      ctx.beginPath();
+      ctx.moveTo(from.x, from.y);
+      ctx.lineTo(to.x, to.y);
+      ctx.stroke();
+      ctx.restore();
+    },
+    [canvasRef, brushColor, brushSize, brushSpread]
+  );
+
   if (!hasImage) {
     return (
       <div
@@ -195,7 +229,11 @@ export function EditorCanvas({
     <div
       ref={containerRef}
       className={`relative flex flex-1 overflow-auto bg-editor-workspace ${
-        activeTool === "select" && hasImage ? (isPanning ? "cursor-grabbing" : "cursor-grab") : ""
+        activeTool === "select" && hasImage
+          ? (isPanning ? "cursor-grabbing" : "cursor-grab")
+          : activeTool === "pen"
+          ? "cursor-crosshair"
+          : ""
       }`}
       style={{ justifyContent: "center", alignItems: "center" }}
       onDragOver={(e) => {
@@ -278,6 +316,13 @@ export function EditorCanvas({
             if (activeTool === "crop") {
               handleMouseDown(e);
               e.stopPropagation();
+            } else if (activeTool === "pen") {
+              const coords = getImageCoords(e);
+              if (!coords) return;
+              setIsDrawing(true);
+              strokePointsRef.current = [coords];
+              drawPreviewSegment(coords, coords);
+              e.stopPropagation();
             } else if (activeTool === "marquee") {
               e.stopPropagation();
               if (floatingSelection) {
@@ -346,6 +391,15 @@ export function EditorCanvas({
           onMouseMove={(e) => {
             if (activeTool === "crop") {
               handleMouseMove(e);
+            } else if (activeTool === "pen") {
+              if (!isDrawing) return;
+              const coords = getImageCoords(e);
+              if (!coords) return;
+              const prev = strokePointsRef.current[strokePointsRef.current.length - 1];
+              if (prev) {
+                drawPreviewSegment(prev, coords);
+              }
+              strokePointsRef.current.push(coords);
             } else if (activeTool === "marquee") {
               if (isDraggingFloat && floatDragOffset) {
                 const coords = getImageCoords(e);
@@ -388,6 +442,12 @@ export function EditorCanvas({
           onMouseUp={() => {
             if (activeTool === "crop") {
               handleMouseUp();
+            } else if (activeTool === "pen") {
+              if (!isDrawing) return;
+              setIsDrawing(false);
+              const points = [...strokePointsRef.current];
+              strokePointsRef.current = [];
+              onDrawStroke(points);
             } else if (activeTool === "marquee") {
               setMarqueeStart(null);
               setIsDraggingFloat(false);
@@ -400,6 +460,12 @@ export function EditorCanvas({
           onMouseLeave={() => {
             if (activeTool === "crop") {
               handleMouseUp();
+            } else if (activeTool === "pen") {
+              if (!isDrawing) return;
+              setIsDrawing(false);
+              const points = [...strokePointsRef.current];
+              strokePointsRef.current = [];
+              onDrawStroke(points);
             } else if (activeTool === "marquee") {
               setMarqueeStart(null);
               setIsDraggingFloat(false);

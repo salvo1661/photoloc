@@ -79,4 +79,7 @@ Photoloc is open source and we welcome contributions.
 - Submit pull requests for fixes, improvements, and translations
 - Keep changes focused and include a clear description
 
+## TODO
+- Fix pen-tool flicker after each completed stroke (canvas flashes briefly when stroke is committed to layer history/composite).
+
 Curated on [LeanVibe](https://leanvibe.io/vibe/photoloc)

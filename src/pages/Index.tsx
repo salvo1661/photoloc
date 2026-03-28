@@ -265,6 +265,10 @@ const Index = () => {
             floatingSelection={editor.floatingSelection}
             onMoveFloatingSelection={editor.moveFloatingSelection}
             onResizeFloatingSelection={editor.resizeFloatingSelection}
+            brushColor={editor.brushColor}
+            brushSize={editor.brushSize}
+            brushSpread={editor.brushSpread}
+            onDrawStroke={editor.drawStroke}
           />
         </div>
 
@@ -276,6 +280,10 @@ const Index = () => {
           backgroundColor={editor.backgroundColor}
           layers={editor.layers}
           activeLayerId={editor.activeLayerId}
+          activeTool={editor.activeTool}
+          brushColor={editor.brushColor}
+          brushSize={editor.brushSize}
+          brushSpread={editor.brushSpread}
           messages={msgs}
           onAdjustmentChange={(key: keyof Adjustments, value: number) =>
             editor.setAdjustments((prev) => ({ ...prev, [key]: value }))
@@ -291,6 +299,9 @@ const Index = () => {
           onSetLayerOpacity={editor.setLayerOpacity}
           onReorderLayers={editor.reorderLayers}
           onMergeDown={editor.mergeDown}
+          onBrushColorChange={editor.setBrushColor}
+          onBrushSizeChange={editor.setBrushSize}
+          onBrushSpreadChange={editor.setBrushSpread}
         />
       </div>
 

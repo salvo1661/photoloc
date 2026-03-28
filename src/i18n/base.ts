@@ -22,6 +22,7 @@ export const baseMessages: Messages = {
     tools: {
       selectPan: "Select / Pan",
       marqueeSelect: "Marquee Select",
+      pen: "Pen",
       crop: "Crop",
       resize: "Resize",
       rotateCw: "Rotate 90° CW",
@@ -52,6 +53,10 @@ export const baseMessages: Messages = {
       moveDown: "Move down",
       mergeDown: "Merge down",
       deleteLayer: "Delete layer",
+      pen: "Brush",
+      brushColor: "Color",
+      brushSize: "Size",
+      brushSpread: "Spread",
     },
     adjustments: {
       brightness: "Brightness",
@@ -130,6 +135,7 @@ export const baseMessages: Messages = {
     deleteLayer: "Delete layer",
     reorderLayers: "Reorder layers",
     mergeDown: "Merge down",
+    drawStroke: "Draw stroke",
   },
   layers: {
     background: "Background",

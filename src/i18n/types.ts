@@ -12,7 +12,8 @@ export type HistoryLabelKey =
   | "addLayer"
   | "deleteLayer"
   | "reorderLayers"
-  | "mergeDown";
+  | "mergeDown"
+  | "drawStroke";
 
 export type HistoryLabelParams = {
   width?: number;
@@ -43,6 +44,7 @@ export type Messages = {
     tools: {
       selectPan: string;
       marqueeSelect: string;
+      pen: string;
       crop: string;
       resize: string;
       rotateCw: string;
@@ -73,6 +75,10 @@ export type Messages = {
       moveDown: string;
       mergeDown: string;
       deleteLayer: string;
+      pen: string;
+      brushColor: string;
+      brushSize: string;
+      brushSpread: string;
     };
     adjustments: {
       brightness: string;
