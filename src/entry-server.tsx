@@ -1,11 +1,11 @@
 import React from "react";
 import { renderToString } from "react-dom/server";
 import { StaticRouter } from "react-router-dom/server";
-import { HelmetProvider } from "react-helmet-async";
+import { HelmetProvider, type FilledContext } from "react-helmet-async";
 import App from "./App";
 
 export async function render(url: string) {
-  const helmetContext: any = {};
+  const helmetContext: Partial<FilledContext> = {};
   const appHtml = renderToString(
     <HelmetProvider context={helmetContext}>
       <StaticRouter location={url}>

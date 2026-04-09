@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import type { HistoryLabelKey, HistoryLabelParams, LayerNameKey } from "@/i18n";
+import { drawStrokePath, type StrokePoint } from "@/lib/brush";
 
 export interface Adjustments {
   brightness: number;
@@ -50,7 +51,6 @@ const DEFAULT_ADJUSTMENTS: Adjustments = {
 };
 
 export type ActiveTool = "select" | "crop" | "resize" | "rotate" | "marquee" | "pen";
-export type StrokePoint = { x: number; y: number };
 
 export interface SelectionData {
   rect: CropRect;
@@ -87,6 +87,30 @@ export function useImageEditor() {
   // Layer state
   const [layers, setLayers] = useState<Layer[]>([]);
   const [activeLayerId, setActiveLayerId] = useState<string>("");
+  const layerCanvasCacheRef = useRef<Map<string, HTMLCanvasElement>>(new Map());
+
+  const syncLayerCanvasCache = useCallback((layerList: Layer[]) => {
+    const nextIds = new Set(layerList.map((layer) => layer.id));
+    layerCanvasCacheRef.current.forEach((_, layerId) => {
+      if (!nextIds.has(layerId)) {
+        layerCanvasCacheRef.current.delete(layerId);
+      }
+    });
+  }, []);
+
+  const cacheLayerCanvas = useCallback(
+    (layerId: string, source: CanvasImageSource, width: number, height: number) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      ctx.clearRect(0, 0, width, height);
+      ctx.drawImage(source, 0, 0, width, height);
+      layerCanvasCacheRef.current.set(layerId, canvas);
+    },
+    []
+  );
 
   const buildFilterString = (adj: Adjustments) => {
     return `brightness(${adj.brightness}%) contrast(${adj.contrast}%) saturate(${adj.saturation}%) hue-rotate(${adj.hue}deg) sepia(${adj.sepia}%) grayscale(${adj.grayscale}%) blur(${adj.blur}px)`;
@@ -101,26 +125,48 @@ export function useImageEditor() {
     (layerList: Layer[], cw: number, ch: number) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
-      canvas.width = cw;
-      canvas.height = ch;
+      const needsResize = canvas.width !== cw || canvas.height !== ch;
+      if (needsResize) {
+        canvas.width = cw;
+        canvas.height = ch;
+      }
       setImageWidth(cw);
       setImageHeight(ch);
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
-      ctx.clearRect(0, 0, cw, ch);
-
-      let remaining = layerList.filter((l) => l.visible).length;
-      if (remaining === 0) return;
 
       const sortedLayers = [...layerList].filter((l) => l.visible);
+      if (sortedLayers.length === 0) {
+        ctx.clearRect(0, 0, cw, ch);
+        return;
+      }
+
+      const canDrawFromCache = sortedLayers.every((layer) => {
+        const cached = layerCanvasCacheRef.current.get(layer.id);
+        return cached && cached.width === cw && cached.height === ch;
+      });
+
+      if (canDrawFromCache) {
+        ctx.clearRect(0, 0, cw, ch);
+        sortedLayers.forEach((layer) => {
+          const cached = layerCanvasCacheRef.current.get(layer.id);
+          if (!cached) return;
+          ctx.globalAlpha = layer.opacity;
+          ctx.drawImage(cached, 0, 0);
+          ctx.globalAlpha = 1;
+        });
+        return;
+      }
+
       const loadedImages: Map<string, HTMLImageElement> = new Map();
+      const remaining = sortedLayers.length;
 
       sortedLayers.forEach((layer) => {
         const img = new Image();
         img.onload = () => {
+          cacheLayerCanvas(layer.id, img, cw, ch);
           loadedImages.set(layer.id, img);
           if (loadedImages.size === remaining) {
-            // Draw in order
             ctx.clearRect(0, 0, cw, ch);
             sortedLayers.forEach((l) => {
               const lImg = loadedImages.get(l.id);
@@ -135,7 +181,7 @@ export function useImageEditor() {
         img.src = layer.imageData;
       });
     },
-    []
+    [cacheLayerCanvas]
   );
 
   // Push history with current layer state
@@ -236,6 +282,8 @@ export function useImageEditor() {
 
           const newLayers = [newLayer];
           setLayers(newLayers);
+          syncLayerCanvasCache(newLayers);
+          cacheLayerCanvas(layerId, tempCanvas, img.width, img.height);
           setActiveLayerId(layerId);
           setImageWidth(img.width);
           setImageHeight(img.height);
@@ -277,18 +325,19 @@ export function useImageEditor() {
       };
       reader.readAsDataURL(file);
     },
-    []
+    [cacheLayerCanvas, syncLayerCanvasCache]
   );
 
   // Restore from history entry
   const restoreFromEntry = useCallback(
     (entry: HistoryEntry) => {
       setLayers(entry.layers.map((l) => ({ ...l })));
+      syncLayerCanvasCache(entry.layers);
       setActiveLayerId(entry.activeLayerId);
       setAdjustments({ ...DEFAULT_ADJUSTMENTS });
       compositeAndRender(entry.layers, entry.canvasWidth, entry.canvasHeight);
     },
-    [compositeAndRender]
+    [compositeAndRender, syncLayerCanvasCache]
   );
 
   const undo = useCallback(() => {
@@ -335,12 +384,14 @@ export function useImageEditor() {
             : l
         );
         setLayers(newLayers);
+        syncLayerCanvasCache(newLayers);
+        cacheLayerCanvas(activeLayerId, result.canvas, result.w, result.h);
         pushHistory(labelKey, newLayers, activeLayerId, imageWidth, imageHeight, labelParams);
         compositeAndRender(newLayers, imageWidth, imageHeight);
       };
       img.src = layerData;
     },
-    [getActiveLayerData, layers, activeLayerId, pushHistory, compositeAndRender, imageWidth, imageHeight]
+    [getActiveLayerData, layers, activeLayerId, pushHistory, compositeAndRender, imageWidth, imageHeight, cacheLayerCanvas, syncLayerCanvasCache]
   );
 
   // Flatten adjustments into active layer
@@ -449,6 +500,7 @@ export function useImageEditor() {
 
       Promise.all(layers.map(resizeLayer)).then((newLayers) => {
         setLayers(newLayers);
+        syncLayerCanvasCache(newLayers);
         pushHistory("resizeTo", newLayers, activeLayerId, newWidth, newHeight, {
           width: newWidth,
           height: newHeight,
@@ -456,49 +508,25 @@ export function useImageEditor() {
         compositeAndRender(newLayers, newWidth, newHeight);
       });
     },
-    [layers, activeLayerId, pushHistory, compositeAndRender]
+    [layers, activeLayerId, pushHistory, compositeAndRender, syncLayerCanvasCache]
   );
 
   const drawStroke = useCallback(
     (points: StrokePoint[]) => {
       if (!points.length) return;
-      const layerData = getActiveLayerData();
-      if (!layerData) return;
-
-      const img = new Image();
-      img.onload = () => {
+      const commitStroke = (base: CanvasImageSource) => {
         const canvas = document.createElement("canvas");
         canvas.width = imageWidth;
         canvas.height = imageHeight;
         const ctx = canvas.getContext("2d");
         if (!ctx) return;
 
-        ctx.drawImage(img, 0, 0, imageWidth, imageHeight);
-        ctx.strokeStyle = brushColor;
-        ctx.fillStyle = brushColor;
-        ctx.lineWidth = brushSize;
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-        if (brushSpread > 0) {
-          ctx.shadowColor = brushColor;
-          ctx.shadowBlur = brushSpread;
-        }
-
-        if (points.length === 1) {
-          ctx.beginPath();
-          ctx.arc(points[0].x, points[0].y, Math.max(brushSize / 2, 1), 0, Math.PI * 2);
-          ctx.fill();
-        } else {
-          ctx.beginPath();
-          ctx.moveTo(points[0].x, points[0].y);
-          for (let i = 1; i < points.length; i += 1) {
-            ctx.lineTo(points[i].x, points[i].y);
-          }
-          ctx.stroke();
-        }
-
-        ctx.shadowBlur = 0;
-
+        ctx.drawImage(base, 0, 0, imageWidth, imageHeight);
+        drawStrokePath(ctx, points, {
+          color: brushColor,
+          size: brushSize,
+          spread: brushSpread,
+        });
         const newImageData = canvas.toDataURL("image/png");
         const newLayers = layers.map((l) =>
           l.id === activeLayerId
@@ -511,8 +539,24 @@ export function useImageEditor() {
             : l
         );
         setLayers(newLayers);
+        syncLayerCanvasCache(newLayers);
+        cacheLayerCanvas(activeLayerId, canvas, imageWidth, imageHeight);
         pushHistory("drawStroke", newLayers, activeLayerId, imageWidth, imageHeight);
         compositeAndRender(newLayers, imageWidth, imageHeight);
+      };
+
+      const cachedLayer = layerCanvasCacheRef.current.get(activeLayerId);
+      if (cachedLayer) {
+        commitStroke(cachedLayer);
+        return;
+      }
+
+      const layerData = getActiveLayerData();
+      if (!layerData) return;
+
+      const img = new Image();
+      img.onload = () => {
+        commitStroke(img);
       };
       img.src = layerData;
     },
@@ -527,6 +571,8 @@ export function useImageEditor() {
       activeLayerId,
       pushHistory,
       compositeAndRender,
+      cacheLayerCanvas,
+      syncLayerCanvasCache,
     ]
   );
 
@@ -573,7 +619,7 @@ export function useImageEditor() {
         img.src = layer.imageData;
       });
     },
-    [layers, imageWidth, imageHeight, fileName]
+    [adjustments, layers, imageWidth, imageHeight, fileName]
   );
 
   // Marquee selection: copy from active layer
@@ -641,11 +687,13 @@ export function useImageEditor() {
         l.id === activeLayerId ? { ...l, imageData: newImageData } : l
       );
       setLayers(newLayers);
+      syncLayerCanvasCache(newLayers);
+      cacheLayerCanvas(activeLayerId, eraseCanvas, imageWidth, imageHeight);
       pushHistory("cutSelection", newLayers, activeLayerId, imageWidth, imageHeight);
       compositeAndRender(newLayers, imageWidth, imageHeight);
     };
     img.src = layerData;
-  }, [selectionRect, getActiveLayerData, layers, activeLayerId, pushHistory, compositeAndRender, imageWidth, imageHeight, backgroundColor]);
+  }, [selectionRect, getActiveLayerData, layers, activeLayerId, pushHistory, compositeAndRender, imageWidth, imageHeight, backgroundColor, cacheLayerCanvas, syncLayerCanvasCache]);
 
   // Paste floating selection as new layer
   const pasteSelection = useCallback(() => {
@@ -676,6 +724,8 @@ export function useImageEditor() {
 
       const newLayers = [...layers, newLayer];
       setLayers(newLayers);
+      syncLayerCanvasCache(newLayers);
+      cacheLayerCanvas(pastedLayerId, tempCanvas, imageWidth, imageHeight);
       setActiveLayerId(pastedLayerId);
       pushHistory("pasteAsLayer", newLayers, pastedLayerId, imageWidth, imageHeight);
       compositeAndRender(newLayers, imageWidth, imageHeight);
@@ -683,7 +733,7 @@ export function useImageEditor() {
       setSelectionRect(null);
     };
     img.src = floatingSelection.imageData;
-  }, [floatingSelection, layers, imageWidth, imageHeight, pushHistory, compositeAndRender]);
+  }, [floatingSelection, layers, imageWidth, imageHeight, pushHistory, compositeAndRender, cacheLayerCanvas, syncLayerCanvasCache]);
 
   const moveFloatingSelection = useCallback((newX: number, newY: number) => {
     setFloatingSelection((prev) => {
@@ -730,11 +780,13 @@ export function useImageEditor() {
       };
       const newLayers = [...layers, newLayer];
       setLayers(newLayers);
+      syncLayerCanvasCache(newLayers);
+      cacheLayerCanvas(id, tempCanvas, tempCanvas.width, tempCanvas.height);
       setActiveLayerId(id);
       pushHistory("addLayer", newLayers, id, imageWidth, imageHeight);
       compositeAndRender(newLayers, imageWidth, imageHeight);
     },
-    [layers, imageWidth, imageHeight, pushHistory, compositeAndRender]
+    [layers, imageWidth, imageHeight, pushHistory, compositeAndRender, cacheLayerCanvas, syncLayerCanvasCache]
   );
 
   const deleteLayer = useCallback(
@@ -743,11 +795,12 @@ export function useImageEditor() {
       const newLayers = layers.filter((l) => l.id !== layerId);
       const newActiveId = activeLayerId === layerId ? newLayers[newLayers.length - 1].id : activeLayerId;
       setLayers(newLayers);
+      syncLayerCanvasCache(newLayers);
       setActiveLayerId(newActiveId);
       pushHistory("deleteLayer", newLayers, newActiveId, imageWidth, imageHeight);
       compositeAndRender(newLayers, imageWidth, imageHeight);
     },
-    [layers, activeLayerId, imageWidth, imageHeight, pushHistory, compositeAndRender]
+    [layers, activeLayerId, imageWidth, imageHeight, pushHistory, compositeAndRender, syncLayerCanvasCache]
   );
 
   const toggleLayerVisibility = useCallback(
@@ -756,9 +809,10 @@ export function useImageEditor() {
         l.id === layerId ? { ...l, visible: !l.visible } : l
       );
       setLayers(newLayers);
+      syncLayerCanvasCache(newLayers);
       compositeAndRender(newLayers, imageWidth, imageHeight);
     },
-    [layers, imageWidth, imageHeight, compositeAndRender]
+    [layers, imageWidth, imageHeight, compositeAndRender, syncLayerCanvasCache]
   );
 
   const setLayerOpacity = useCallback(
@@ -767,9 +821,10 @@ export function useImageEditor() {
         l.id === layerId ? { ...l, opacity } : l
       );
       setLayers(newLayers);
+      syncLayerCanvasCache(newLayers);
       compositeAndRender(newLayers, imageWidth, imageHeight);
     },
-    [layers, imageWidth, imageHeight, compositeAndRender]
+    [layers, imageWidth, imageHeight, compositeAndRender, syncLayerCanvasCache]
   );
 
   const renameLayer = useCallback(
@@ -789,10 +844,11 @@ export function useImageEditor() {
       const [moved] = newLayers.splice(fromIndex, 1);
       newLayers.splice(toIndex, 0, moved);
       setLayers(newLayers);
+      syncLayerCanvasCache(newLayers);
       pushHistory("reorderLayers", newLayers, activeLayerId, imageWidth, imageHeight);
       compositeAndRender(newLayers, imageWidth, imageHeight);
     },
-    [layers, activeLayerId, imageWidth, imageHeight, pushHistory, compositeAndRender]
+    [layers, activeLayerId, imageWidth, imageHeight, pushHistory, compositeAndRender, syncLayerCanvasCache]
   );
 
   const mergeDown = useCallback(
@@ -829,6 +885,8 @@ export function useImageEditor() {
           l.id === bottomLayer.id ? mergedLayer : l
         );
         setLayers(newLayers);
+        syncLayerCanvasCache(newLayers);
+        cacheLayerCanvas(bottomLayer.id, canvas, imageWidth, imageHeight);
         setActiveLayerId(mergedLayer.id);
         pushHistory("mergeDown", newLayers, mergedLayer.id, imageWidth, imageHeight);
         compositeAndRender(newLayers, imageWidth, imageHeight);
@@ -839,7 +897,7 @@ export function useImageEditor() {
       topImg.src = topLayer.imageData;
       bottomImg.src = bottomLayer.imageData;
     },
-    [layers, imageWidth, imageHeight, pushHistory, compositeAndRender]
+    [layers, imageWidth, imageHeight, pushHistory, compositeAndRender, cacheLayerCanvas, syncLayerCanvasCache]
   );
 
   // Re-render when canvas remounts
@@ -847,7 +905,7 @@ export function useImageEditor() {
     if (layers.length > 0 && imageWidth > 0) {
       compositeAndRender(layers, imageWidth, imageHeight);
     }
-  }, [layers.length > 0 && imageWidth > 0 ? "render" : "skip"]);
+  }, [layers, imageWidth, imageHeight, compositeAndRender]);
 
   // Also re-render on history restore with canvas check
   useEffect(() => {
@@ -860,7 +918,7 @@ export function useImageEditor() {
         compositeAndRender(entry.layers, entry.canvasWidth, entry.canvasHeight);
       }
     }
-  }, [historyIndex]);
+  }, [history, historyIndex, compositeAndRender]);
 
   // Keyboard shortcuts
   useEffect(() => {

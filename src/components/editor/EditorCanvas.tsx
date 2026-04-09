@@ -2,6 +2,7 @@ import { useRef, useCallback, useState, useEffect } from "react";
 import { Upload, ImageIcon } from "lucide-react";
 import type { CropRect, ActiveTool, SelectionData } from "@/hooks/useImageEditor";
 import type { Messages } from "@/i18n";
+import { drawStrokePath } from "@/lib/brush";
 
 interface EditorCanvasProps {
   canvasRef: React.RefObject<HTMLCanvasElement>;
@@ -64,6 +65,7 @@ export function EditorCanvas({
   const [panStart, setPanStart] = useState<{ x: number; y: number; scrollLeft: number; scrollTop: number } | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const strokePointsRef = useRef<Array<{ x: number; y: number }>>([]);
+  const previewCanvasRef = useRef<HTMLCanvasElement>(null);
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
@@ -146,29 +148,56 @@ export function EditorCanvas({
     setCropStart(null);
   }, []);
 
-  const drawPreviewSegment = useCallback(
-    (from: { x: number; y: number }, to: { x: number; y: number }) => {
-      const canvas = canvasRef.current;
+  const renderPreviewStroke = useCallback(
+    (points: Array<{ x: number; y: number }>) => {
+      const canvas = previewCanvasRef.current;
       if (!canvas) return;
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
-      ctx.save();
-      ctx.strokeStyle = brushColor;
-      ctx.lineWidth = brushSize;
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-      if (brushSpread > 0) {
-        ctx.shadowColor = brushColor;
-        ctx.shadowBlur = brushSpread;
-      }
-      ctx.beginPath();
-      ctx.moveTo(from.x, from.y);
-      ctx.lineTo(to.x, to.y);
-      ctx.stroke();
-      ctx.restore();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawStrokePath(ctx, points, {
+        color: brushColor,
+        size: brushSize,
+        spread: brushSpread,
+      });
     },
-    [canvasRef, brushColor, brushSize, brushSpread]
+    [brushColor, brushSize, brushSpread]
   );
+
+  const clearPreviewStroke = useCallback(() => {
+    const canvas = previewCanvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }, []);
+
+  useEffect(() => {
+    const previewCanvas = previewCanvasRef.current;
+    if (!previewCanvas) return;
+    previewCanvas.width = imageWidth;
+    previewCanvas.height = imageHeight;
+    clearPreviewStroke();
+  }, [imageWidth, imageHeight, clearPreviewStroke]);
+
+  useEffect(() => {
+    if (!isDrawing) return;
+    renderPreviewStroke(strokePointsRef.current);
+  }, [isDrawing, renderPreviewStroke, brushColor, brushSize, brushSpread]);
+
+  const commitPenStroke = useCallback(() => {
+    if (!isDrawing) return;
+    setIsDrawing(false);
+    const points = [...strokePointsRef.current];
+    strokePointsRef.current = [];
+    clearPreviewStroke();
+    onDrawStroke(points);
+  }, [isDrawing, clearPreviewStroke, onDrawStroke]);
+
+  useEffect(() => {
+    return () => {
+      clearPreviewStroke();
+    };
+  }, [clearPreviewStroke]);
 
   if (!hasImage) {
     return (
@@ -321,7 +350,7 @@ export function EditorCanvas({
               if (!coords) return;
               setIsDrawing(true);
               strokePointsRef.current = [coords];
-              drawPreviewSegment(coords, coords);
+              renderPreviewStroke(strokePointsRef.current);
               e.stopPropagation();
             } else if (activeTool === "marquee") {
               e.stopPropagation();
@@ -395,11 +424,8 @@ export function EditorCanvas({
               if (!isDrawing) return;
               const coords = getImageCoords(e);
               if (!coords) return;
-              const prev = strokePointsRef.current[strokePointsRef.current.length - 1];
-              if (prev) {
-                drawPreviewSegment(prev, coords);
-              }
               strokePointsRef.current.push(coords);
+              renderPreviewStroke(strokePointsRef.current);
             } else if (activeTool === "marquee") {
               if (isDraggingFloat && floatDragOffset) {
                 const coords = getImageCoords(e);
@@ -443,11 +469,7 @@ export function EditorCanvas({
             if (activeTool === "crop") {
               handleMouseUp();
             } else if (activeTool === "pen") {
-              if (!isDrawing) return;
-              setIsDrawing(false);
-              const points = [...strokePointsRef.current];
-              strokePointsRef.current = [];
-              onDrawStroke(points);
+              commitPenStroke();
             } else if (activeTool === "marquee") {
               setMarqueeStart(null);
               setIsDraggingFloat(false);
@@ -461,11 +483,7 @@ export function EditorCanvas({
             if (activeTool === "crop") {
               handleMouseUp();
             } else if (activeTool === "pen") {
-              if (!isDrawing) return;
-              setIsDrawing(false);
-              const points = [...strokePointsRef.current];
-              strokePointsRef.current = [];
-              onDrawStroke(points);
+              commitPenStroke();
             } else if (activeTool === "marquee") {
               setMarqueeStart(null);
               setIsDraggingFloat(false);
@@ -480,6 +498,13 @@ export function EditorCanvas({
             ref={canvasRef}
             style={{ filter: filterStyle, imageRendering: zoom > 200 ? "pixelated" : "auto" }}
             className="block shadow-2xl"
+          />
+          <canvas
+            ref={previewCanvasRef}
+            width={imageWidth}
+            height={imageHeight}
+            style={{ filter: filterStyle, imageRendering: zoom > 200 ? "pixelated" : "auto" }}
+            className="pointer-events-none absolute left-0 top-0"
           />
 
           {/* Crop overlay */}

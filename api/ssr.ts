@@ -2,6 +2,17 @@ import fs from "fs";
 import path from "path";
 import { pathToFileURL } from "url";
 
+type RequestLike = {
+  url?: string;
+  headers?: Record<string, string | string[] | undefined>;
+};
+
+type ResponseLike = {
+  statusCode: number;
+  setHeader: (name: string, value: string) => void;
+  end: (body?: Buffer | string) => void;
+};
+
 const supportedLanguages = ["en", "es", "pt", "fr", "de", "hi", "ja", "ko", "id", "ar", "zh", "ru", "bn", "uk", "pl", "th", "ur", "sw", "ta"];
 const fallbackLanguage = "en";
 
@@ -66,7 +77,7 @@ const getContentType = (filePath: string) => {
   }
 };
 
-const sendStatic = (res: any, filePath: string) => {
+const sendStatic = (res: ResponseLike, filePath: string) => {
   if (!fs.existsSync(filePath)) return false;
   const data = fs.readFileSync(filePath);
   res.statusCode = 200;
@@ -75,7 +86,7 @@ const sendStatic = (res: any, filePath: string) => {
   return true;
 };
 
-export default async function handler(req: any, res: any) {
+export default async function handler(req: RequestLike, res: ResponseLike) {
   try {
     const url = req?.url ?? "/";
     const pathname = url.split("?")[0] || "/";
@@ -126,7 +137,7 @@ export default async function handler(req: any, res: any) {
     const helmetLink = helmet?.link?.toString() ?? "";
 
     let html = template;
-    html = html.replace("<div id=\"root\"></div>", `<div id=\"root\">${appHtml}</div>`);
+    html = html.replace('<div id="root"></div>', `<div id="root">${appHtml}</div>`);
     html = html.replace("</head>", `${helmetTitle}${helmetMeta}${helmetLink}</head>`);
 
     res.statusCode = 200;
