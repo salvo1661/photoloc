@@ -23,6 +23,7 @@ export const baseMessages: Messages = {
       selectPan: "Select / Pan",
       marqueeSelect: "Marquee Select",
       pen: "Pen",
+      eraser: "Eraser",
       crop: "Crop",
       resize: "Resize",
       rotateCw: "Rotate 90° CW",
@@ -54,6 +55,7 @@ export const baseMessages: Messages = {
       mergeDown: "Merge down",
       deleteLayer: "Delete layer",
       pen: "Brush",
+      eraser: "Eraser",
       brushColor: "Color",
       brushSize: "Size",
       brushSpread: "Spread",
@@ -136,6 +138,7 @@ export const baseMessages: Messages = {
     reorderLayers: "Reorder layers",
     mergeDown: "Merge down",
     drawStroke: "Draw stroke",
+    eraseStroke: "Erase stroke",
   },
   layers: {
     background: "Background",

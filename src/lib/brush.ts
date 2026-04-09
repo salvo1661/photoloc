@@ -9,6 +9,8 @@ export interface BrushStyle {
   spread: number;
 }
 
+export type BrushMode = "draw" | "erase";
+
 const brushStampCache = new Map<string, HTMLCanvasElement>();
 
 function clamp(value: number, min: number, max: number) {
@@ -100,13 +102,17 @@ function drawStamp(ctx: CanvasRenderingContext2D, brush: BrushStyle, point: Stro
 export function drawStrokePath(
   ctx: CanvasRenderingContext2D,
   points: StrokePoint[],
-  brush: BrushStyle
+  brush: BrushStyle,
+  mode: BrushMode = "draw"
 ) {
   if (!points.length) return;
 
   const spacing = Math.max(0.5, Math.min(brush.size, Math.max(brush.size + brush.spread, 1) * 0.18));
 
   ctx.save();
+  if (mode === "erase") {
+    ctx.globalCompositeOperation = "destination-out";
+  }
 
   if (points.length === 1) {
     drawStamp(ctx, brush, points[0]);

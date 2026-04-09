@@ -8,6 +8,7 @@ import {
   Scaling,
   BoxSelect,
   Pencil,
+  Eraser,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -40,6 +41,7 @@ export function LeftSidebar({
     { id: "select" as const, icon: MousePointer2, label: messages.ui.tools.selectPan },
     { id: "marquee" as const, icon: BoxSelect, label: messages.ui.tools.marqueeSelect },
     { id: "pen" as const, icon: Pencil, label: messages.ui.tools.pen },
+    { id: "eraser" as const, icon: Eraser, label: messages.ui.tools.eraser },
     { id: "crop" as const, icon: Crop, label: messages.ui.tools.crop },
     { id: "resize" as const, icon: Scaling, label: messages.ui.tools.resize },
   ];

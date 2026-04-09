@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import type { HistoryLabelKey, HistoryLabelParams, LayerNameKey } from "@/i18n";
-import { drawStrokePath, type StrokePoint } from "@/lib/brush";
+import { drawStrokePath, type BrushMode, type StrokePoint } from "@/lib/brush";
 
 export interface Adjustments {
   brightness: number;
@@ -50,7 +50,8 @@ const DEFAULT_ADJUSTMENTS: Adjustments = {
   blur: 0,
 };
 
-export type ActiveTool = "select" | "crop" | "resize" | "rotate" | "marquee" | "pen";
+export type BrushTool = "pen" | "eraser";
+export type ActiveTool = "select" | "crop" | "resize" | "rotate" | "marquee" | BrushTool;
 
 export interface SelectionData {
   rect: CropRect;
@@ -512,7 +513,7 @@ export function useImageEditor() {
   );
 
   const drawStroke = useCallback(
-    (points: StrokePoint[]) => {
+    (points: StrokePoint[], mode: BrushMode = "draw") => {
       if (!points.length) return;
       const commitStroke = (base: CanvasImageSource) => {
         const canvas = document.createElement("canvas");
@@ -526,7 +527,7 @@ export function useImageEditor() {
           color: brushColor,
           size: brushSize,
           spread: brushSpread,
-        });
+        }, mode);
         const newImageData = canvas.toDataURL("image/png");
         const newLayers = layers.map((l) =>
           l.id === activeLayerId
@@ -541,7 +542,7 @@ export function useImageEditor() {
         setLayers(newLayers);
         syncLayerCanvasCache(newLayers);
         cacheLayerCanvas(activeLayerId, canvas, imageWidth, imageHeight);
-        pushHistory("drawStroke", newLayers, activeLayerId, imageWidth, imageHeight);
+        pushHistory(mode === "erase" ? "eraseStroke" : "drawStroke", newLayers, activeLayerId, imageWidth, imageHeight);
         compositeAndRender(newLayers, imageWidth, imageHeight);
       };
 

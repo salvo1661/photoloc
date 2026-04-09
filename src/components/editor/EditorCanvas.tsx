@@ -3,6 +3,7 @@ import { Upload, ImageIcon } from "lucide-react";
 import type { CropRect, ActiveTool, SelectionData } from "@/hooks/useImageEditor";
 import type { Messages } from "@/i18n";
 import { drawStrokePath } from "@/lib/brush";
+import type { BrushMode } from "@/lib/brush";
 
 interface EditorCanvasProps {
   canvasRef: React.RefObject<HTMLCanvasElement>;
@@ -25,7 +26,7 @@ interface EditorCanvasProps {
   brushColor: string;
   brushSize: number;
   brushSpread: number;
-  onDrawStroke: (points: Array<{ x: number; y: number }>) => void;
+  onDrawStroke: (points: Array<{ x: number; y: number }>, mode: BrushMode) => void;
 }
 
 export function EditorCanvas({
@@ -155,13 +156,17 @@ export function EditorCanvas({
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const isEraser = activeTool === "eraser";
+      ctx.save();
+      ctx.globalAlpha = isEraser ? 0.42 : 1;
       drawStrokePath(ctx, points, {
-        color: brushColor,
+        color: isEraser ? "#ffffff" : brushColor,
         size: brushSize,
         spread: brushSpread,
       });
+      ctx.restore();
     },
-    [brushColor, brushSize, brushSpread]
+    [activeTool, brushColor, brushSize, brushSpread]
   );
 
   const clearPreviewStroke = useCallback(() => {
@@ -184,14 +189,14 @@ export function EditorCanvas({
     renderPreviewStroke(strokePointsRef.current);
   }, [isDrawing, renderPreviewStroke, brushColor, brushSize, brushSpread]);
 
-  const commitPenStroke = useCallback(() => {
-    if (!isDrawing) return;
+  const commitBrushStroke = useCallback(() => {
+    if (!isDrawing || (activeTool !== "pen" && activeTool !== "eraser")) return;
     setIsDrawing(false);
     const points = [...strokePointsRef.current];
     strokePointsRef.current = [];
     clearPreviewStroke();
-    onDrawStroke(points);
-  }, [isDrawing, clearPreviewStroke, onDrawStroke]);
+    onDrawStroke(points, activeTool === "eraser" ? "erase" : "draw");
+  }, [activeTool, isDrawing, clearPreviewStroke, onDrawStroke]);
 
   useEffect(() => {
     return () => {
@@ -260,7 +265,7 @@ export function EditorCanvas({
       className={`relative flex flex-1 overflow-auto bg-editor-workspace ${
         activeTool === "select" && hasImage
           ? (isPanning ? "cursor-grabbing" : "cursor-grab")
-          : activeTool === "pen"
+          : activeTool === "pen" || activeTool === "eraser"
           ? "cursor-crosshair"
           : ""
       }`}
@@ -345,7 +350,7 @@ export function EditorCanvas({
             if (activeTool === "crop") {
               handleMouseDown(e);
               e.stopPropagation();
-            } else if (activeTool === "pen") {
+            } else if (activeTool === "pen" || activeTool === "eraser") {
               const coords = getImageCoords(e);
               if (!coords) return;
               setIsDrawing(true);
@@ -420,7 +425,7 @@ export function EditorCanvas({
           onMouseMove={(e) => {
             if (activeTool === "crop") {
               handleMouseMove(e);
-            } else if (activeTool === "pen") {
+            } else if (activeTool === "pen" || activeTool === "eraser") {
               if (!isDrawing) return;
               const coords = getImageCoords(e);
               if (!coords) return;
@@ -468,8 +473,8 @@ export function EditorCanvas({
           onMouseUp={() => {
             if (activeTool === "crop") {
               handleMouseUp();
-            } else if (activeTool === "pen") {
-              commitPenStroke();
+            } else if (activeTool === "pen" || activeTool === "eraser") {
+              commitBrushStroke();
             } else if (activeTool === "marquee") {
               setMarqueeStart(null);
               setIsDraggingFloat(false);
@@ -482,8 +487,8 @@ export function EditorCanvas({
           onMouseLeave={() => {
             if (activeTool === "crop") {
               handleMouseUp();
-            } else if (activeTool === "pen") {
-              commitPenStroke();
+            } else if (activeTool === "pen" || activeTool === "eraser") {
+              commitBrushStroke();
             } else if (activeTool === "marquee") {
               setMarqueeStart(null);
               setIsDraggingFloat(false);

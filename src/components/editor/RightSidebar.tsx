@@ -91,44 +91,46 @@ export function RightSidebar({
     <div className="flex w-56 flex-col border-l border-border bg-editor-panel">
       {/* Adjustments */}
       <div className="flex-shrink overflow-hidden">
-        {activeTool === "pen" && (
+        {(activeTool === "pen" || activeTool === "eraser") && (
           <div className="border-b border-border">
             <div className="flex h-8 items-center border-b border-border bg-editor-panel-header px-3">
               <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                {messages.ui.right.pen}
+                {activeTool === "eraser" ? messages.ui.right.eraser : messages.ui.right.pen}
               </span>
             </div>
             <div className="space-y-3 p-3">
-              <div>
-                <div className="mb-1.5 flex items-center justify-between">
-                  <span className="text-[11px] text-secondary-foreground">{messages.ui.right.brushColor}</span>
-                  <span className="font-mono text-[10px] text-muted-foreground uppercase">{brushColor}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <label
-                    className="flex h-7 w-7 cursor-pointer items-center justify-center rounded border border-border"
-                    style={{ backgroundColor: brushColor }}
-                  >
-                    <input
-                      type="color"
-                      value={brushColor}
-                      onChange={(e) => onBrushColorChange(e.target.value)}
-                      className="invisible h-0 w-0"
-                    />
-                  </label>
-                  <div className="ml-auto flex gap-1">
-                    {["#111111", "#ffffff", "#ef4444", "#22c55e", "#3b82f6", "#f59e0b"].map((c) => (
-                      <button
-                        key={c}
-                        className="h-4 w-4 rounded-sm border border-border"
-                        style={{ backgroundColor: c }}
-                        onClick={() => onBrushColorChange(c)}
-                        title={c}
+              {activeTool === "pen" && (
+                <div>
+                  <div className="mb-1.5 flex items-center justify-between">
+                    <span className="text-[11px] text-secondary-foreground">{messages.ui.right.brushColor}</span>
+                    <span className="font-mono text-[10px] text-muted-foreground uppercase">{brushColor}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label
+                      className="flex h-7 w-7 cursor-pointer items-center justify-center rounded border border-border"
+                      style={{ backgroundColor: brushColor }}
+                    >
+                      <input
+                        type="color"
+                        value={brushColor}
+                        onChange={(e) => onBrushColorChange(e.target.value)}
+                        className="invisible h-0 w-0"
                       />
-                    ))}
+                    </label>
+                    <div className="ml-auto flex gap-1">
+                      {["#111111", "#ffffff", "#ef4444", "#22c55e", "#3b82f6", "#f59e0b"].map((c) => (
+                        <button
+                          key={c}
+                          className="h-4 w-4 rounded-sm border border-border"
+                          style={{ backgroundColor: c }}
+                          onClick={() => onBrushColorChange(c)}
+                          title={c}
+                        />
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               <div>
                 <div className="mb-1 flex items-center justify-between">
