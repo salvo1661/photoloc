@@ -15,7 +15,9 @@ export type HistoryLabelKey =
   | "mergeDown"
   | "drawStroke"
   | "eraseStroke"
-  | "addText";
+  | "addText"
+  | "moveText"
+  | "moveLayer";
 
 export type HistoryLabelParams = {
   width?: number;

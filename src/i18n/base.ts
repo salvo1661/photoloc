@@ -148,6 +148,8 @@ export const baseMessages: Messages = {
     drawStroke: "Draw stroke",
     eraseStroke: "Erase stroke",
     addText: "Add text",
+    moveText: "Move text",
+    moveLayer: "Move layer",
   },
   layers: {
     background: "Background",

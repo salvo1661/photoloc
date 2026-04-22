@@ -1,6 +1,6 @@
 import { useRef, useCallback, useState, useEffect } from "react";
 import { Upload, ImageIcon } from "lucide-react";
-import type { CropRect, ActiveTool, SelectionData } from "@/hooks/useImageEditor";
+import type { CropRect, ActiveTool, SelectionData, ActiveLayerHitInfo } from "@/hooks/useImageEditor";
 import type { Messages } from "@/i18n";
 import { drawStrokePath } from "@/lib/brush";
 import type { BrushMode } from "@/lib/brush";
@@ -11,6 +11,7 @@ interface EditorCanvasProps {
   zoom: number;
   filterStyle: string;
   activeTool: ActiveTool;
+  activeLayerId: string;
   imageWidth: number;
   imageHeight: number;
   messages: Messages;
@@ -29,6 +30,9 @@ interface EditorCanvasProps {
   onDrawStroke: (points: Array<{ x: number; y: number }>, mode: BrushMode) => void;
   onAddText: (x: number, y: number) => void;
   onPickTextLayer: (x: number, y: number) => void;
+  onGetActiveLayerHit: (x: number, y: number) => ActiveLayerHitInfo | null;
+  onMoveActiveLayer: (layerId: string, deltaX: number, deltaY: number) => void;
+  onCommitActiveLayerMove: (layerId: string, deltaX: number, deltaY: number) => void;
 }
 
 const isSupportedUploadFile = (file: File): boolean => {
@@ -43,6 +47,7 @@ export function EditorCanvas({
   zoom,
   filterStyle,
   activeTool,
+  activeLayerId,
   imageWidth,
   imageHeight,
   messages,
@@ -61,6 +66,9 @@ export function EditorCanvas({
   onDrawStroke,
   onAddText,
   onPickTextLayer,
+  onGetActiveLayerHit,
+  onMoveActiveLayer,
+  onCommitActiveLayerMove,
 }: EditorCanvasProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -75,6 +83,12 @@ export function EditorCanvas({
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState<{ x: number; y: number; scrollLeft: number; scrollTop: number } | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
+  const [draggingLayer, setDraggingLayer] = useState<{
+    layerId: string;
+    startX: number;
+    startY: number;
+  } | null>(null);
+  const layerDragDeltaRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const strokePointsRef = useRef<Array<{ x: number; y: number }>>([]);
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -363,7 +377,21 @@ export function EditorCanvas({
           }}
           onDragStart={(e) => e.preventDefault()}
           onMouseDown={(e) => {
-            if (activeTool === "crop") {
+            if (activeTool === "select") {
+              const coords = getImageCoords(e);
+              if (!coords) return;
+              const hit = onGetActiveLayerHit(coords.x, coords.y);
+              if (hit && hit.layerId === activeLayerId) {
+                e.preventDefault();
+                setDraggingLayer({
+                  layerId: hit.layerId,
+                  startX: coords.x,
+                  startY: coords.y,
+                });
+                layerDragDeltaRef.current = { x: 0, y: 0 };
+                e.stopPropagation();
+              }
+            } else if (activeTool === "crop") {
               e.preventDefault();
               handleMouseDown(e);
               e.stopPropagation();
@@ -444,14 +472,14 @@ export function EditorCanvas({
               e.preventDefault();
               const coords = getImageCoords(e);
               if (!coords) return;
-              onAddText(coords.x, coords.y);
+              const hit = onGetActiveLayerHit(coords.x, coords.y);
+              if (hit?.isText) {
+                onPickTextLayer(coords.x, coords.y);
+              } else {
+                onAddText(coords.x, coords.y);
+              }
               e.stopPropagation();
             }
-          }}
-          onDoubleClick={(e) => {
-            const coords = getImageCoords(e);
-            if (!coords) return;
-            onPickTextLayer(coords.x, coords.y);
           }}
           onMouseMove={(e) => {
             if (activeTool === "crop") {
@@ -499,6 +527,18 @@ export function EditorCanvas({
                   onSelectionChange({ x, y, width: w, height: h });
                 }
               }
+            } else if (activeTool === "select" && draggingLayer) {
+              const coords = getImageCoords(e);
+              if (!coords) return;
+              onMoveActiveLayer(
+                draggingLayer.layerId,
+                coords.x - draggingLayer.startX,
+                coords.y - draggingLayer.startY
+              );
+              layerDragDeltaRef.current = {
+                x: coords.x - draggingLayer.startX,
+                y: coords.y - draggingLayer.startY,
+              };
             }
           }}
           onMouseUp={() => {
@@ -513,6 +553,14 @@ export function EditorCanvas({
               setResizeHandle(null);
               setResizeStart(null);
               setIsResizingFloat(false);
+            } else if (activeTool === "select" && draggingLayer) {
+              onCommitActiveLayerMove(
+                draggingLayer.layerId,
+                layerDragDeltaRef.current.x,
+                layerDragDeltaRef.current.y
+              );
+              setDraggingLayer(null);
+              layerDragDeltaRef.current = { x: 0, y: 0 };
             }
           }}
           onMouseLeave={() => {
@@ -527,6 +575,14 @@ export function EditorCanvas({
               setResizeHandle(null);
               setResizeStart(null);
               setIsResizingFloat(false);
+            } else if (activeTool === "select" && draggingLayer) {
+              onCommitActiveLayerMove(
+                draggingLayer.layerId,
+                layerDragDeltaRef.current.x,
+                layerDragDeltaRef.current.y
+              );
+              setDraggingLayer(null);
+              layerDragDeltaRef.current = { x: 0, y: 0 };
             }
           }}
         >
@@ -657,6 +713,7 @@ export function EditorCanvas({
               ))}
             </div>
           )}
+
         </div>
       </div>
     </div>

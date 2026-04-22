@@ -64,6 +64,22 @@ const Index = () => {
     fileInputRef.current?.click();
   }, []);
 
+  const handleZoomIn = useCallback(() => {
+    editor.setZoom((prev) => {
+      const next = Math.min(prev + 25, 500);
+      if (prev < 100 && next > 100) return 100;
+      return next;
+    });
+  }, [editor]);
+
+  const handleZoomOut = useCallback(() => {
+    editor.setZoom((prev) => {
+      const next = Math.max(prev - 25, 10);
+      if (prev > 100 && next < 100) return 100;
+      return next;
+    });
+  }, [editor]);
+
   useEffect(() => {
     setTextLanguage(currentLang);
   }, [currentLang, setTextLanguage]);
@@ -164,8 +180,8 @@ const Index = () => {
         onExport={() => setShowExport(true)}
         onUndo={editor.undo}
         onRedo={editor.redo}
-        onZoomIn={() => editor.setZoom(Math.min(editor.zoom + 25, 500))}
-        onZoomOut={() => editor.setZoom(Math.max(editor.zoom - 25, 10))}
+        onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
         onZoomFit={() => {
           // Re-calculate fit zoom
           const canvas = editor.canvasRef.current;
@@ -264,6 +280,7 @@ const Index = () => {
             zoom={editor.zoom}
             filterStyle={editor.getCanvasFilterStyle()}
             activeTool={editor.activeTool}
+            activeLayerId={editor.activeLayerId}
             imageWidth={editor.imageWidth}
             imageHeight={editor.imageHeight}
             messages={msgs}
@@ -282,6 +299,9 @@ const Index = () => {
             onDrawStroke={editor.drawStroke}
             onAddText={editor.addTextAt}
             onPickTextLayer={editor.pickTextLayerAt}
+            onGetActiveLayerHit={editor.getActiveLayerHitAt}
+            onMoveActiveLayer={editor.moveActiveLayer}
+            onCommitActiveLayerMove={editor.commitActiveLayerMove}
           />
         </div>
 

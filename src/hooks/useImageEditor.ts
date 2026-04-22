@@ -72,6 +72,13 @@ export interface TextLayerData extends TextToolSettings {
   boxHeight: number;
 }
 
+export interface ActiveLayerHitInfo {
+  layerId: string;
+  isText: boolean;
+  textData?: TextLayerData;
+  bounds?: { left: number; top: number; width: number; height: number };
+}
+
 const DEFAULT_ADJUSTMENTS: Adjustments = {
   brightness: 100,
   contrast: 100,
@@ -229,6 +236,17 @@ const cloneLayer = (layer: Layer): Layer => ({
   textData: layer.textData ? { ...layer.textData } : undefined,
 });
 
+const getTextLayerBounds = (textData: TextLayerData) => {
+  const alignOffset =
+    textData.align === "center" ? textData.boxWidth / 2 : textData.align === "right" ? textData.boxWidth : 0;
+  return {
+    left: textData.x - alignOffset,
+    top: textData.y,
+    width: textData.boxWidth,
+    height: textData.boxHeight,
+  };
+};
+
 export function useImageEditor() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [imageWidth, setImageWidth] = useState(0);
@@ -254,6 +272,16 @@ export function useImageEditor() {
   const [layers, setLayers] = useState<Layer[]>([]);
   const [activeLayerId, setActiveLayerId] = useState<string>("");
   const layerCanvasCacheRef = useRef<Map<string, HTMLCanvasElement>>(new Map());
+  const layerMoveRef = useRef<{
+    layerId: string;
+    sourceCanvas: HTMLCanvasElement;
+    sourceTextData?: TextLayerData;
+  } | null>(null);
+  const layersRef = useRef<Layer[]>([]);
+
+  useEffect(() => {
+    layersRef.current = layers;
+  }, [layers]);
 
   const syncLayerCanvasCache = useCallback((layerList: Layer[]) => {
     const nextIds = new Set(layerList.map((layer) => layer.id));
@@ -974,6 +1002,98 @@ export function useImageEditor() {
     [layers]
   );
 
+  const getActiveLayerHitAt = useCallback(
+    (x: number, y: number): ActiveLayerHitInfo | null => {
+      const active = layersRef.current.find((layer) => layer.id === activeLayerId);
+      if (!active || !active.visible) return null;
+      const cached = layerCanvasCacheRef.current.get(activeLayerId);
+      if (!cached) return null;
+      const px = Math.round(x);
+      const py = Math.round(y);
+      if (px < 0 || py < 0 || px >= cached.width || py >= cached.height) return null;
+      const ctx = cached.getContext("2d");
+      if (!ctx) return null;
+      const alpha = ctx.getImageData(px, py, 1, 1).data[3];
+      if (alpha === 0) return null;
+      const sourceCanvas = document.createElement("canvas");
+      sourceCanvas.width = imageWidth;
+      sourceCanvas.height = imageHeight;
+      const sourceCtx = sourceCanvas.getContext("2d");
+      if (!sourceCtx) return null;
+      sourceCtx.drawImage(cached, 0, 0);
+      layerMoveRef.current = {
+        layerId: activeLayerId,
+        sourceCanvas,
+        sourceTextData: active.textData ? { ...active.textData } : undefined,
+      };
+      if (active.type === "text" && active.textData) {
+        return {
+          layerId: activeLayerId,
+          isText: true,
+          textData: { ...active.textData },
+          bounds: getTextLayerBounds(active.textData),
+        };
+      }
+      return { layerId: activeLayerId, isText: false };
+    },
+    [activeLayerId, imageWidth, imageHeight]
+  );
+
+  const moveActiveLayer = useCallback(
+    (layerId: string, deltaX: number, deltaY: number) => {
+      const move = layerMoveRef.current;
+      if (!move || move.layerId !== layerId) return;
+      const dx = Math.round(deltaX);
+      const dy = Math.round(deltaY);
+      const currentLayers = layersRef.current;
+      const layer = currentLayers.find((l) => l.id === layerId);
+      if (!layer) return;
+      const canvas = document.createElement("canvas");
+      canvas.width = imageWidth;
+      canvas.height = imageHeight;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      ctx.clearRect(0, 0, imageWidth, imageHeight);
+      ctx.drawImage(move.sourceCanvas, dx, dy);
+
+      const newLayers = currentLayers.map((l) => {
+        if (l.id !== layerId) return l;
+        if (l.type === "text" && move.sourceTextData) {
+          return {
+            ...l,
+            imageData: canvas.toDataURL("image/png"),
+            textData: {
+              ...move.sourceTextData,
+              x: move.sourceTextData.x + dx,
+              y: move.sourceTextData.y + dy,
+            },
+          };
+        }
+        return {
+          ...l,
+          imageData: canvas.toDataURL("image/png"),
+        };
+      });
+      setLayers(newLayers);
+      syncLayerCanvasCache(newLayers);
+      cacheLayerCanvas(layerId, canvas, imageWidth, imageHeight);
+      compositeAndRender(newLayers, imageWidth, imageHeight);
+    },
+    [imageWidth, imageHeight, cacheLayerCanvas, compositeAndRender, syncLayerCanvasCache]
+  );
+
+  const commitActiveLayerMove = useCallback(
+    (layerId: string, deltaX: number, deltaY: number) => {
+      const move = layerMoveRef.current;
+      layerMoveRef.current = null;
+      if (!move || move.layerId !== layerId) return;
+      if (Math.round(deltaX) === 0 && Math.round(deltaY) === 0) return;
+      pushHistory("moveLayer", layersRef.current, layerId, imageWidth, imageHeight);
+      setActiveLayerId(layerId);
+    },
+    [pushHistory, imageWidth, imageHeight]
+  );
+
   // Export - composite all visible layers
   const exportImage = useCallback(
     (format: string, quality: number) => {
@@ -1439,6 +1559,9 @@ export function useImageEditor() {
     setTextFontFamily,
     setTextLanguage,
     textFontOptions: TEXT_FONT_OPTIONS,
+    getActiveLayerHitAt,
+    moveActiveLayer,
+    commitActiveLayerMove,
     layers,
     activeLayerId,
     setActiveLayerId,

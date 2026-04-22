@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { RotateCcw, Check, History } from "lucide-react";
@@ -116,373 +117,276 @@ export function RightSidebar({
     { key: "grayscale", label: messages.ui.adjustments.grayscale, min: 0, max: 100, step: 1, default: 0, unit: "%" },
     { key: "blur", label: messages.ui.adjustments.blur, min: 0, max: 20, step: 0.1, default: 0, unit: "px" },
   ];
-  const hasChanges = adjustmentConfig.some(
-    (c) => adjustments[c.key] !== c.default
-  );
+  const hasChanges = adjustmentConfig.some((c) => adjustments[c.key] !== c.default);
+
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const resizeStateRef = useRef<{ startY: number; startHeight: number } | null>(null);
+  const [topPanelHeight, setTopPanelHeight] = useState(380);
+
+  useEffect(() => {
+    const onMouseMove = (e: MouseEvent) => {
+      const state = resizeStateRef.current;
+      const sidebar = sidebarRef.current;
+      if (!state || !sidebar) return;
+      const total = sidebar.clientHeight || 720;
+      const minTop = 240;
+      const minBottom = 280;
+      const maxTop = Math.max(minTop, total - minBottom);
+      const next = Math.min(maxTop, Math.max(minTop, state.startHeight + (e.clientY - state.startY)));
+      setTopPanelHeight(next);
+    };
+    const onMouseUp = () => {
+      resizeStateRef.current = null;
+    };
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
+  }, []);
 
   return (
-    <div className="flex w-56 flex-col border-l border-border bg-editor-panel">
-      {/* Adjustments */}
-      <div className="flex-shrink overflow-hidden">
-        {(activeTool === "pen" || activeTool === "eraser") && (
-          <div className="border-b border-border">
-            <div className="flex h-8 items-center border-b border-border bg-editor-panel-header px-3">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                {activeTool === "eraser" ? messages.ui.right.eraser : messages.ui.right.pen}
-              </span>
-            </div>
-            <div className="space-y-3 p-3">
-              {activeTool === "pen" && (
-                <div>
-                  <div className="mb-1.5 flex items-center justify-between">
-                    <span className="text-[11px] text-secondary-foreground">{messages.ui.right.brushColor}</span>
-                    <span className="font-mono text-[10px] text-muted-foreground uppercase">{brushColor}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <label
-                      className="flex h-7 w-7 cursor-pointer items-center justify-center rounded border border-border"
-                      style={{ backgroundColor: brushColor }}
-                    >
-                      <input
-                        type="color"
-                        value={brushColor}
-                        onChange={(e) => onBrushColorChange(e.target.value)}
-                        className="invisible h-0 w-0"
-                      />
-                    </label>
-                    <div className="ml-auto flex gap-1">
-                      {["#111111", "#ffffff", "#ef4444", "#22c55e", "#3b82f6", "#f59e0b"].map((c) => (
-                        <button
-                          key={c}
-                          className="h-4 w-4 rounded-sm border border-border"
-                          style={{ backgroundColor: c }}
-                          onClick={() => onBrushColorChange(c)}
-                          title={c}
+    <div ref={sidebarRef} className="flex w-56 min-h-0 flex-col border-l border-border bg-editor-panel">
+      <div className="flex flex-shrink-0 flex-col overflow-hidden" style={{ height: topPanelHeight }}>
+        <ScrollArea className="flex-1">
+          {(activeTool === "pen" || activeTool === "eraser") && (
+            <div className="border-b border-border">
+              <div className="flex h-8 items-center border-b border-border bg-editor-panel-header px-3">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  {activeTool === "eraser" ? messages.ui.right.eraser : messages.ui.right.pen}
+                </span>
+              </div>
+              <div className="space-y-3 p-3">
+                {activeTool === "pen" && (
+                  <div>
+                    <div className="mb-1.5 flex items-center justify-between">
+                      <span className="text-[11px] text-secondary-foreground">{messages.ui.right.brushColor}</span>
+                      <span className="font-mono text-[10px] text-muted-foreground uppercase">{brushColor}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <label
+                        className="flex h-7 w-7 cursor-pointer items-center justify-center rounded border border-border"
+                        style={{ backgroundColor: brushColor }}
+                      >
+                        <input
+                          type="color"
+                          value={brushColor}
+                          onChange={(e) => onBrushColorChange(e.target.value)}
+                          className="invisible h-0 w-0"
                         />
-                      ))}
+                      </label>
+                      <div className="ml-auto flex gap-1">
+                        {["#111111", "#ffffff", "#ef4444", "#22c55e", "#3b82f6", "#f59e0b"].map((c) => (
+                          <button
+                            key={c}
+                            className="h-4 w-4 rounded-sm border border-border"
+                            style={{ backgroundColor: c }}
+                            onClick={() => onBrushColorChange(c)}
+                            title={c}
+                          />
+                        ))}
+                      </div>
                     </div>
                   </div>
+                )}
+
+                <div>
+                  <div className="mb-1 flex items-center justify-between">
+                    <span className="text-[11px] text-secondary-foreground">{messages.ui.right.brushSize}</span>
+                    <span className="font-mono text-[10px] text-muted-foreground">{Math.round(brushSize)}px</span>
+                  </div>
+                  <Slider min={1} max={120} step={1} value={[brushSize]} onValueChange={([v]) => onBrushSizeChange(v)} disabled={!hasImage} className="cursor-pointer" />
                 </div>
+
+                <div>
+                  <div className="mb-1 flex items-center justify-between">
+                    <span className="text-[11px] text-secondary-foreground">{messages.ui.right.brushSpread}</span>
+                    <span className="font-mono text-[10px] text-muted-foreground">{brushSpread.toFixed(1)}px</span>
+                  </div>
+                  <Slider min={0} max={40} step={0.5} value={[brushSpread]} onValueChange={([v]) => onBrushSpreadChange(v)} disabled={!hasImage} className="cursor-pointer" />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTool === "text" && (
+            <div className="border-b border-border">
+              <div className="flex h-8 items-center border-b border-border bg-editor-panel-header px-3">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{messages.ui.right.text}</span>
+              </div>
+              <div className="space-y-3 p-3">
+                <div>
+                  <div className="mb-1 text-[11px] text-secondary-foreground">{messages.ui.right.textContent}</div>
+                  <textarea
+                    value={textSettings.content}
+                    onChange={(e) => onTextContentChange(e.target.value)}
+                    className="h-16 w-full resize-none rounded border border-border bg-editor-toolbar px-2 py-1 text-xs text-foreground outline-none focus:border-editor-active"
+                    placeholder="Text"
+                  />
+                </div>
+
+                <div>
+                  <div className="mb-1 text-[11px] text-secondary-foreground">{messages.ui.right.textFont}</div>
+                  <select
+                    value={textSettings.fontFamily}
+                    onChange={(e) => onTextFontFamilyChange(e.target.value)}
+                    className="h-8 w-full rounded border border-border bg-editor-toolbar px-2 text-xs text-foreground outline-none focus:border-editor-active"
+                  >
+                    {textFontOptions.map((option) => (
+                      <option key={option.family} value={option.family}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <div className="mb-1 flex items-center justify-between">
+                    <span className="text-[11px] text-secondary-foreground">{messages.ui.right.textSize}</span>
+                    <span className="font-mono text-[10px] text-muted-foreground">{Math.round(textSettings.fontSize)}px</span>
+                  </div>
+                  <Slider min={10} max={220} step={1} value={[textSettings.fontSize]} onValueChange={([v]) => onTextFontSizeChange(v)} disabled={!hasImage} className="cursor-pointer" />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <div className="mb-1 text-[11px] text-secondary-foreground">Align</div>
+                    <select
+                      value={textSettings.align}
+                      onChange={(e) => onTextAlignChange(e.target.value as "left" | "center" | "right")}
+                      className="h-8 w-full rounded border border-border bg-editor-toolbar px-2 text-xs text-foreground outline-none focus:border-editor-active"
+                    >
+                      <option value="left">Left</option>
+                      <option value="center">Center</option>
+                      <option value="right">Right</option>
+                    </select>
+                  </div>
+                  <div>
+                    <div className="mb-1 flex items-center justify-between">
+                      <span className="text-[11px] text-secondary-foreground">Line Height</span>
+                      <span className="font-mono text-[10px] text-muted-foreground">{textSettings.lineHeight.toFixed(2)}</span>
+                    </div>
+                    <Slider min={0.8} max={3} step={0.05} value={[textSettings.lineHeight]} onValueChange={([v]) => onTextLineHeightChange(v)} disabled={!hasImage} className="cursor-pointer" />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="mb-1 flex items-center justify-between">
+                    <span className="text-[11px] text-secondary-foreground">Letter Spacing</span>
+                    <span className="font-mono text-[10px] text-muted-foreground">{textSettings.letterSpacing.toFixed(1)}px</span>
+                  </div>
+                  <Slider min={-2} max={20} step={0.5} value={[textSettings.letterSpacing]} onValueChange={([v]) => onTextLetterSpacingChange(v)} disabled={!hasImage} className="cursor-pointer" />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <div className="mb-1 text-[11px] text-secondary-foreground">{messages.ui.right.textColor}</div>
+                    <label className="flex h-8 cursor-pointer items-center justify-between rounded border border-border px-2" style={{ backgroundColor: "#11111122" }}>
+                      <span className="font-mono text-[10px] uppercase text-muted-foreground">{textSettings.fontColor}</span>
+                      <input type="color" value={textSettings.fontColor} onChange={(e) => onTextFontColorChange(e.target.value)} className="h-5 w-5 cursor-pointer rounded border-0 bg-transparent p-0" />
+                    </label>
+                  </div>
+                  <div>
+                    <div className="mb-1 text-[11px] text-secondary-foreground">{messages.ui.right.textWeight}</div>
+                    <select
+                      value={String(textSettings.fontWeight)}
+                      onChange={(e) => onTextFontWeightChange(Number(e.target.value))}
+                      className="h-8 w-full rounded border border-border bg-editor-toolbar px-2 text-xs text-foreground outline-none focus:border-editor-active"
+                    >
+                      <option value="400">400</option>
+                      <option value="500">500</option>
+                      <option value="700">700</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <div className="mb-1 text-[11px] text-secondary-foreground">Stroke Color</div>
+                    <input type="color" value={textSettings.strokeColor} onChange={(e) => onTextStrokeColorChange(e.target.value)} className="h-8 w-full cursor-pointer rounded border border-border bg-transparent p-1" />
+                  </div>
+                  <div>
+                    <div className="mb-1 flex items-center justify-between">
+                      <span className="text-[11px] text-secondary-foreground">Stroke</span>
+                      <span className="font-mono text-[10px] text-muted-foreground">{textSettings.strokeWidth.toFixed(1)}px</span>
+                    </div>
+                    <Slider min={0} max={20} step={0.5} value={[textSettings.strokeWidth]} onValueChange={([v]) => onTextStrokeWidthChange(v)} disabled={!hasImage} className="cursor-pointer" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <div className="mb-1 text-[11px] text-secondary-foreground">Shadow Color</div>
+                    <input type="color" value={textSettings.shadowColor.slice(0, 7)} onChange={(e) => onTextShadowColorChange(e.target.value)} className="h-8 w-full cursor-pointer rounded border border-border bg-transparent p-1" />
+                  </div>
+                  <div>
+                    <div className="mb-1 flex items-center justify-between">
+                      <span className="text-[11px] text-secondary-foreground">Shadow Blur</span>
+                      <span className="font-mono text-[10px] text-muted-foreground">{textSettings.shadowBlur.toFixed(1)}px</span>
+                    </div>
+                    <Slider min={0} max={40} step={0.5} value={[textSettings.shadowBlur]} onValueChange={([v]) => onTextShadowBlurChange(v)} disabled={!hasImage} className="cursor-pointer" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <div className="mb-1 flex items-center justify-between">
+                      <span className="text-[11px] text-secondary-foreground">Shadow X</span>
+                      <span className="font-mono text-[10px] text-muted-foreground">{textSettings.shadowOffsetX.toFixed(1)}px</span>
+                    </div>
+                    <Slider min={-50} max={50} step={0.5} value={[textSettings.shadowOffsetX]} onValueChange={([v]) => onTextShadowOffsetXChange(v)} disabled={!hasImage} className="cursor-pointer" />
+                  </div>
+                  <div>
+                    <div className="mb-1 flex items-center justify-between">
+                      <span className="text-[11px] text-secondary-foreground">Shadow Y</span>
+                      <span className="font-mono text-[10px] text-muted-foreground">{textSettings.shadowOffsetY.toFixed(1)}px</span>
+                    </div>
+                    <Slider min={-50} max={50} step={0.5} value={[textSettings.shadowOffsetY]} onValueChange={([v]) => onTextShadowOffsetYChange(v)} disabled={!hasImage} className="cursor-pointer" />
+                  </div>
+                </div>
+
+                <p className="text-[10px] text-muted-foreground">{messages.ui.right.textPlaceHint}</p>
+              </div>
+            </div>
+          )}
+
+          <div className="flex h-8 items-center justify-between border-b border-border bg-editor-panel-header px-3">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{messages.ui.right.adjustments}</span>
+            <div className="flex gap-0.5">
+              {hasChanges && (
+                <>
+                  <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground hover:text-foreground" onClick={onResetAdjustments} title={messages.ui.right.reset}>
+                    <RotateCcw className="h-3 w-3" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-5 w-5 text-editor-success hover:text-editor-success" onClick={onApplyAdjustments} title={messages.ui.right.apply}>
+                    <Check className="h-3 w-3" />
+                  </Button>
+                </>
               )}
-
-              <div>
-                <div className="mb-1 flex items-center justify-between">
-                  <span className="text-[11px] text-secondary-foreground">{messages.ui.right.brushSize}</span>
-                  <span className="font-mono text-[10px] text-muted-foreground">{Math.round(brushSize)}px</span>
-                </div>
-                <Slider
-                  min={1}
-                  max={120}
-                  step={1}
-                  value={[brushSize]}
-                  onValueChange={([v]) => onBrushSizeChange(v)}
-                  disabled={!hasImage}
-                  className="cursor-pointer"
-                />
-              </div>
-
-              <div>
-                <div className="mb-1 flex items-center justify-between">
-                  <span className="text-[11px] text-secondary-foreground">{messages.ui.right.brushSpread}</span>
-                  <span className="font-mono text-[10px] text-muted-foreground">{brushSpread.toFixed(1)}px</span>
-                </div>
-                <Slider
-                  min={0}
-                  max={40}
-                  step={0.5}
-                  value={[brushSpread]}
-                  onValueChange={([v]) => onBrushSpreadChange(v)}
-                  disabled={!hasImage}
-                  className="cursor-pointer"
-                />
-              </div>
             </div>
           </div>
-        )}
 
-        {activeTool === "text" && (
-          <div className="border-b border-border">
-            <div className="flex h-8 items-center border-b border-border bg-editor-panel-header px-3">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                {messages.ui.right.text}
-              </span>
-            </div>
-            <div className="space-y-3 p-3">
-              <div>
-                <div className="mb-1 text-[11px] text-secondary-foreground">{messages.ui.right.textContent}</div>
-                <textarea
-                  value={textSettings.content}
-                  onChange={(e) => onTextContentChange(e.target.value)}
-                  className="h-16 w-full resize-none rounded border border-border bg-editor-toolbar px-2 py-1 text-xs text-foreground outline-none focus:border-editor-active"
-                  placeholder="Text"
-                />
-              </div>
-
-              <div>
-                <div className="mb-1 text-[11px] text-secondary-foreground">{messages.ui.right.textFont}</div>
-                <select
-                  value={textSettings.fontFamily}
-                  onChange={(e) => onTextFontFamilyChange(e.target.value)}
-                  className="h-8 w-full rounded border border-border bg-editor-toolbar px-2 text-xs text-foreground outline-none focus:border-editor-active"
-                >
-                  {textFontOptions.map((option) => (
-                    <option key={option.family} value={option.family}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <div className="mb-1 flex items-center justify-between">
-                  <span className="text-[11px] text-secondary-foreground">{messages.ui.right.textSize}</span>
-                  <span className="font-mono text-[10px] text-muted-foreground">{Math.round(textSettings.fontSize)}px</span>
-                </div>
-                <Slider
-                  min={10}
-                  max={220}
-                  step={1}
-                  value={[textSettings.fontSize]}
-                  onValueChange={([v]) => onTextFontSizeChange(v)}
-                  disabled={!hasImage}
-                  className="cursor-pointer"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <div className="mb-1 text-[11px] text-secondary-foreground">Align</div>
-                  <select
-                    value={textSettings.align}
-                    onChange={(e) => onTextAlignChange(e.target.value as "left" | "center" | "right")}
-                    className="h-8 w-full rounded border border-border bg-editor-toolbar px-2 text-xs text-foreground outline-none focus:border-editor-active"
-                  >
-                    <option value="left">Left</option>
-                    <option value="center">Center</option>
-                    <option value="right">Right</option>
-                  </select>
-                </div>
-                <div>
-                  <div className="mb-1 flex items-center justify-between">
-                    <span className="text-[11px] text-secondary-foreground">Line Height</span>
-                    <span className="font-mono text-[10px] text-muted-foreground">{textSettings.lineHeight.toFixed(2)}</span>
-                  </div>
-                  <Slider
-                    min={0.8}
-                    max={3}
-                    step={0.05}
-                    value={[textSettings.lineHeight]}
-                    onValueChange={([v]) => onTextLineHeightChange(v)}
-                    disabled={!hasImage}
-                    className="cursor-pointer"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <div className="mb-1 flex items-center justify-between">
-                  <span className="text-[11px] text-secondary-foreground">Letter Spacing</span>
-                  <span className="font-mono text-[10px] text-muted-foreground">{textSettings.letterSpacing.toFixed(1)}px</span>
-                </div>
-                <Slider
-                  min={-2}
-                  max={20}
-                  step={0.5}
-                  value={[textSettings.letterSpacing]}
-                  onValueChange={([v]) => onTextLetterSpacingChange(v)}
-                  disabled={!hasImage}
-                  className="cursor-pointer"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <div className="mb-1 text-[11px] text-secondary-foreground">{messages.ui.right.textColor}</div>
-                  <label
-                    className="flex h-8 cursor-pointer items-center justify-between rounded border border-border px-2"
-                    style={{ backgroundColor: "#11111122" }}
-                  >
-                    <span className="font-mono text-[10px] uppercase text-muted-foreground">{textSettings.fontColor}</span>
-                    <input
-                      type="color"
-                      value={textSettings.fontColor}
-                      onChange={(e) => onTextFontColorChange(e.target.value)}
-                      className="h-5 w-5 cursor-pointer rounded border-0 bg-transparent p-0"
-                    />
-                  </label>
-                </div>
-                <div>
-                  <div className="mb-1 text-[11px] text-secondary-foreground">{messages.ui.right.textWeight}</div>
-                  <select
-                    value={String(textSettings.fontWeight)}
-                    onChange={(e) => onTextFontWeightChange(Number(e.target.value))}
-                    className="h-8 w-full rounded border border-border bg-editor-toolbar px-2 text-xs text-foreground outline-none focus:border-editor-active"
-                  >
-                    <option value="400">400</option>
-                    <option value="500">500</option>
-                    <option value="700">700</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <div className="mb-1 text-[11px] text-secondary-foreground">Stroke Color</div>
-                  <input
-                    type="color"
-                    value={textSettings.strokeColor}
-                    onChange={(e) => onTextStrokeColorChange(e.target.value)}
-                    className="h-8 w-full cursor-pointer rounded border border-border bg-transparent p-1"
-                  />
-                </div>
-                <div>
-                  <div className="mb-1 flex items-center justify-between">
-                    <span className="text-[11px] text-secondary-foreground">Stroke</span>
-                    <span className="font-mono text-[10px] text-muted-foreground">{textSettings.strokeWidth.toFixed(1)}px</span>
-                  </div>
-                  <Slider
-                    min={0}
-                    max={20}
-                    step={0.5}
-                    value={[textSettings.strokeWidth]}
-                    onValueChange={([v]) => onTextStrokeWidthChange(v)}
-                    disabled={!hasImage}
-                    className="cursor-pointer"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <div className="mb-1 text-[11px] text-secondary-foreground">Shadow Color</div>
-                  <input
-                    type="color"
-                    value={textSettings.shadowColor.slice(0, 7)}
-                    onChange={(e) => onTextShadowColorChange(e.target.value)}
-                    className="h-8 w-full cursor-pointer rounded border border-border bg-transparent p-1"
-                  />
-                </div>
-                <div>
-                  <div className="mb-1 flex items-center justify-between">
-                    <span className="text-[11px] text-secondary-foreground">Shadow Blur</span>
-                    <span className="font-mono text-[10px] text-muted-foreground">{textSettings.shadowBlur.toFixed(1)}px</span>
-                  </div>
-                  <Slider
-                    min={0}
-                    max={40}
-                    step={0.5}
-                    value={[textSettings.shadowBlur]}
-                    onValueChange={([v]) => onTextShadowBlurChange(v)}
-                    disabled={!hasImage}
-                    className="cursor-pointer"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <div className="mb-1 flex items-center justify-between">
-                    <span className="text-[11px] text-secondary-foreground">Shadow X</span>
-                    <span className="font-mono text-[10px] text-muted-foreground">{textSettings.shadowOffsetX.toFixed(1)}px</span>
-                  </div>
-                  <Slider
-                    min={-50}
-                    max={50}
-                    step={0.5}
-                    value={[textSettings.shadowOffsetX]}
-                    onValueChange={([v]) => onTextShadowOffsetXChange(v)}
-                    disabled={!hasImage}
-                    className="cursor-pointer"
-                  />
-                </div>
-                <div>
-                  <div className="mb-1 flex items-center justify-between">
-                    <span className="text-[11px] text-secondary-foreground">Shadow Y</span>
-                    <span className="font-mono text-[10px] text-muted-foreground">{textSettings.shadowOffsetY.toFixed(1)}px</span>
-                  </div>
-                  <Slider
-                    min={-50}
-                    max={50}
-                    step={0.5}
-                    value={[textSettings.shadowOffsetY]}
-                    onValueChange={([v]) => onTextShadowOffsetYChange(v)}
-                    disabled={!hasImage}
-                    className="cursor-pointer"
-                  />
-                </div>
-              </div>
-
-              <p className="text-[10px] text-muted-foreground">{messages.ui.right.textPlaceHint}</p>
-            </div>
-          </div>
-        )}
-
-        <div className="flex h-8 items-center justify-between border-b border-border bg-editor-panel-header px-3">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            {messages.ui.right.adjustments}
-          </span>
-          <div className="flex gap-0.5">
-            {hasChanges && (
-              <>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-5 w-5 text-muted-foreground hover:text-foreground"
-                  onClick={onResetAdjustments}
-                  title={messages.ui.right.reset}
-                >
-                  <RotateCcw className="h-3 w-3" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-5 w-5 text-editor-success hover:text-editor-success"
-                  onClick={onApplyAdjustments}
-                  title={messages.ui.right.apply}
-                >
-                  <Check className="h-3 w-3" />
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
-        <ScrollArea className="max-h-64">
           <div className="space-y-3 p-3">
             {adjustmentConfig.map((config) => (
               <div key={config.key}>
                 <div className="mb-1 flex items-center justify-between">
-                  <span className="text-[11px] text-secondary-foreground">
-                    {config.label}
-                  </span>
+                  <span className="text-[11px] text-secondary-foreground">{config.label}</span>
                   <span className="font-mono text-[10px] text-muted-foreground">
-                    {config.key === "blur"
-                      ? adjustments[config.key].toFixed(1)
-                      : Math.round(adjustments[config.key])}
+                    {config.key === "blur" ? adjustments[config.key].toFixed(1) : Math.round(adjustments[config.key])}
                     {config.unit}
                   </span>
                 </div>
-                <Slider
-                  min={config.min}
-                  max={config.max}
-                  step={config.step}
-                  value={[adjustments[config.key]]}
-                  onValueChange={([v]) => onAdjustmentChange(config.key, v)}
-                  disabled={!hasImage}
-                  className="cursor-pointer"
-                />
+                <Slider min={config.min} max={config.max} step={config.step} value={[adjustments[config.key]]} onValueChange={([v]) => onAdjustmentChange(config.key, v)} disabled={!hasImage} className="cursor-pointer" />
               </div>
             ))}
 
-            {/* Background Color */}
             <div className="border-t border-border pt-3">
               <div className="mb-1.5 flex items-center justify-between">
                 <span className="text-[11px] text-secondary-foreground">{messages.ui.right.background}</span>
               </div>
               <div className="flex items-center gap-2">
-                <label
-                  className="flex h-7 w-7 cursor-pointer items-center justify-center rounded border border-border"
-                  style={{ backgroundColor }}
-                >
+                <label className="flex h-7 w-7 cursor-pointer items-center justify-center rounded border border-border" style={{ backgroundColor }}>
                   <input
                     type="color"
                     value={backgroundColor === "transparent" ? "#ffffff" : backgroundColor}
@@ -490,9 +394,7 @@ export function RightSidebar({
                     className="invisible h-0 w-0"
                   />
                 </label>
-                <span className="font-mono text-[10px] text-muted-foreground uppercase">
-                  {backgroundColor}
-                </span>
+                <span className="font-mono text-[10px] text-muted-foreground uppercase">{backgroundColor}</span>
                 <div className="ml-auto flex gap-1">
                   {["#ffffff", "#000000", "#808080", "transparent"].map((c) => (
                     <button
@@ -510,53 +412,58 @@ export function RightSidebar({
         </ScrollArea>
       </div>
 
-      {/* Layers */}
-      <LayerPanel
-        layers={layers}
-        activeLayerId={activeLayerId}
-        hasImage={hasImage}
-        messages={messages}
-        onSelectLayer={onSelectLayer}
-        onToggleVisibility={onToggleLayerVisibility}
-        onDeleteLayer={onDeleteLayer}
-        onAddLayer={onAddLayer}
-        onSetOpacity={onSetLayerOpacity}
-        onReorder={onReorderLayers}
-        onMergeDown={onMergeDown}
+      <div
+        className="h-2 cursor-row-resize border-y border-border bg-editor-panel-header hover:bg-editor-hover"
+        onMouseDown={(e) => {
+          resizeStateRef.current = { startY: e.clientY, startHeight: topPanelHeight };
+          e.preventDefault();
+        }}
+        title="Drag to resize panels"
       />
 
-      {/* History */}
-      <div className="border-t border-border">
-        <div className="flex h-8 items-center gap-1.5 border-b border-border bg-editor-panel-header px-3">
-          <History className="h-3 w-3 text-muted-foreground" />
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            {messages.ui.right.history}
-          </span>
-        </div>
-        <ScrollArea className="h-28">
-          <div className="p-1">
-            {history.map((entry, i) => (
-              <button
-                key={i}
-                className={`w-full rounded-sm px-2 py-1 text-left text-[11px] transition-colors ${
-                  i === historyIndex
-                    ? "bg-editor-active/20 text-editor-active"
-                    : i > historyIndex
-                    ? "text-muted-foreground/40 hover:bg-editor-hover"
-                    : "text-secondary-foreground hover:bg-editor-hover"
-                }`}
-                onClick={() => onRestoreHistory(i)}
-              >
-                {formatHistoryLabel(messages, entry.labelKey, entry.labelParams)}
-              </button>
-            ))}
-            {history.length === 0 && (
-              <p className="px-2 py-3 text-center text-[11px] text-muted-foreground">
-                {messages.ui.right.noHistory}
-              </p>
-            )}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <LayerPanel
+          layers={layers}
+          activeLayerId={activeLayerId}
+          hasImage={hasImage}
+          messages={messages}
+          onSelectLayer={onSelectLayer}
+          onToggleVisibility={onToggleLayerVisibility}
+          onDeleteLayer={onDeleteLayer}
+          onAddLayer={onAddLayer}
+          onSetOpacity={onSetLayerOpacity}
+          onReorder={onReorderLayers}
+          onMergeDown={onMergeDown}
+        />
+
+        <div className="border-t border-border">
+          <div className="flex h-8 items-center gap-1.5 border-b border-border bg-editor-panel-header px-3">
+            <History className="h-3 w-3 text-muted-foreground" />
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{messages.ui.right.history}</span>
           </div>
-        </ScrollArea>
+          <ScrollArea className="h-28">
+            <div className="p-1">
+              {history.map((entry, i) => (
+                <button
+                  key={i}
+                  className={`w-full rounded-sm px-2 py-1 text-left text-[11px] transition-colors ${
+                    i === historyIndex
+                      ? "bg-editor-active/20 text-editor-active"
+                      : i > historyIndex
+                      ? "text-muted-foreground/40 hover:bg-editor-hover"
+                      : "text-secondary-foreground hover:bg-editor-hover"
+                  }`}
+                  onClick={() => onRestoreHistory(i)}
+                >
+                  {formatHistoryLabel(messages, entry.labelKey, entry.labelParams)}
+                </button>
+              ))}
+              {history.length === 0 && (
+                <p className="px-2 py-3 text-center text-[11px] text-muted-foreground">{messages.ui.right.noHistory}</p>
+              )}
+            </div>
+          </ScrollArea>
+        </div>
       </div>
     </div>
   );
