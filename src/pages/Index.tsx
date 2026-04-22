@@ -17,7 +17,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useParams, useLocation, Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { supportedLanguages, languageNames, getMessages } from "../i18n";
+import {
+  supportedLanguages,
+  languageNames,
+  getMessages,
+  localizePath,
+} from "../i18n";
 import { Check, X, Copy, Scissors, ClipboardPaste, ChevronDown, Github } from "lucide-react";
 import type { Adjustments } from "@/hooks/useImageEditor";
 
@@ -26,6 +31,7 @@ const Index = () => {
   const currentLang = params.lang && supportedLanguages.includes(params.lang) ? params.lang : "en";
   const msgs = getMessages(currentLang);
   const location = useLocation();
+  const canonicalPath = localizePath(location.pathname, currentLang);
 
   const editor = useImageEditor();
   const [showExport, setShowExport] = useState(false);
@@ -67,13 +73,13 @@ const Index = () => {
         <meta name="twitter:title" content={msgs.meta.title} />
         <meta property="og:description" content={msgs.meta.description} />
         <meta name="twitter:description" content={msgs.meta.description} />
-        <link rel="canonical" href={`https://photo.localtool.tech${location.pathname}`} />
+        <link rel="canonical" href={`https://photo.localtool.tech${canonicalPath}`} />
         {supportedLanguages.map((lang) => (
           <link
             key={lang}
             rel="alternate"
             hrefLang={lang}
-            href={`https://photo.localtool.tech/${lang}${location.pathname.replace(/^\/(en|es|pt|fr|de|hi|ja|ko|id|ar|zh|vi|it|nl|tr|fa)/, "")}`}
+            href={`https://photo.localtool.tech${localizePath(location.pathname, lang)}`}
           />
         ))}
         <link rel="alternate" hrefLang="x-default" href="https://photo.localtool.tech/en" />
@@ -116,7 +122,7 @@ const Index = () => {
                 {supportedLanguages.map((lang) => (
                   <DropdownMenuItem key={lang} asChild>
                     <Link
-                      to={`/${lang}${location.pathname.replace(/^\/(en|es|pt|fr|de|hi|ja|ko|id|ar|zh|vi|it|nl|tr|fa)/, "")}`}
+                      to={localizePath(location.pathname, lang)}
                       className={currentLang === lang ? "font-semibold" : ""}
                     >
                       {languageNames[lang]}

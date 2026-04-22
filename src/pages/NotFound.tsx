@@ -1,11 +1,10 @@
 import { useLocation, Link } from "react-router-dom";
 import { useEffect } from "react";
-import { supportedLanguages, languageNames, getMessages } from "../i18n";
+import { getLanguageFromPathname, getMessages } from "../i18n";
 
 const NotFound = () => {
   const location = useLocation();
-  const langMatch = location.pathname.match(/^\/(en|es|pt|fr|de|hi|ja|ko|id|ar|zh|vi|it|nl|tr|fa)/);
-  const lang = langMatch?.[1] ?? "en";
+  const lang = getLanguageFromPathname(location.pathname);
   const msgs = getMessages(lang);
 
   useEffect(() => {

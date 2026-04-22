@@ -137,8 +137,29 @@ export const messages: Record<string, Messages> = Object.fromEntries(
   ])
 ) as Record<string, Messages>;
 
+const escapeRegex = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const languagePrefixPattern = new RegExp(
+  `^/(${supportedLanguages.map(escapeRegex).join("|")})(?=/|$)`
+);
+
 export function getMessages(lang: string): Messages {
   return messages[supportedLanguages.includes(lang) ? lang : "en"];
+}
+
+export function getLanguageFromPathname(pathname: string): string {
+  const match = pathname.match(languagePrefixPattern);
+  return match?.[1] ?? "en";
+}
+
+export function stripLanguagePrefix(pathname: string): string {
+  const stripped = pathname.replace(languagePrefixPattern, "");
+  return stripped || "/";
+}
+
+export function localizePath(pathname: string, lang: string): string {
+  const targetLang = supportedLanguages.includes(lang) ? lang : "en";
+  const suffix = stripLanguagePrefix(pathname);
+  return suffix === "/" ? `/${targetLang}` : `/${targetLang}${suffix}`;
 }
 
 export function formatTemplate(
