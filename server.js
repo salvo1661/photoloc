@@ -11,6 +11,22 @@ app.use(express.static(path.join(root, "dist/client"), { index: false }));
 const supportedLanguages = ["en", "es", "pt", "fr", "de", "hi", "ja", "ko", "id", "ar", "zh", "ru", "bn", "uk", "pl", "th", "ur", "sw", "ta"];
 const fallbackLanguage = "en";
 
+const normalizeStackedLanguagePath = (pathname) => {
+  const segments = pathname.split("/").filter(Boolean);
+  if (segments.length === 0) return null;
+  const first = segments[0];
+  if (!supportedLanguages.includes(first)) return null;
+
+  let index = 1;
+  while (index < segments.length && supportedLanguages.includes(segments[index])) {
+    index += 1;
+  }
+
+  if (index === 1) return null;
+  const rest = segments.slice(index);
+  return rest.length > 0 ? `/${first}/${rest.join("/")}` : `/${first}`;
+};
+
 const negotiateLanguage = (headerValue) => {
   const raw = typeof headerValue === "string" ? headerValue : "";
   if (!raw) return fallbackLanguage;
@@ -61,6 +77,13 @@ app.get("/sitemap.xml", (req, res) => {
 
 app.get("*", async (req, res) => {
   try {
+    const normalizedPath = normalizeStackedLanguagePath(req.path);
+    if (normalizedPath && normalizedPath !== req.path) {
+      const query = req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : "";
+      res.redirect(301, `${normalizedPath}${query}`);
+      return;
+    }
+
     if (req.path === "/") {
       const lang = negotiateLanguage(req.get("accept-language"));
       const query = req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : "";

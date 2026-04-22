@@ -262,7 +262,7 @@ export function EditorCanvas({
   return (
     <div
       ref={containerRef}
-      className={`relative flex flex-1 overflow-auto bg-editor-workspace ${
+      className={`relative flex flex-1 select-none overflow-auto bg-editor-workspace ${
         activeTool === "select" && hasImage
           ? (isPanning ? "cursor-grabbing" : "cursor-grab")
           : activeTool === "pen" || activeTool === "eraser"
@@ -290,6 +290,7 @@ export function EditorCanvas({
       }}
       onMouseMove={(e) => {
         if (isPanning && panStart && containerRef.current) {
+          e.preventDefault();
           containerRef.current.scrollLeft = panStart.scrollLeft - (e.clientX - panStart.x);
           containerRef.current.scrollTop = panStart.scrollTop - (e.clientY - panStart.y);
         }
@@ -331,7 +332,7 @@ export function EditorCanvas({
       )}
 
       <div
-        className="relative flex-shrink-0"
+        className="relative flex-shrink-0 select-none"
         style={{
           width: imageWidth * scale,
           height: imageHeight * scale,
@@ -339,18 +340,23 @@ export function EditorCanvas({
         }}
       >
         <div
-          className="relative"
+          className="relative select-none"
           style={{
             width: imageWidth,
             height: imageHeight,
             transform: `scale(${scale})`,
             transformOrigin: "top left",
+            userSelect: "none",
+            WebkitUserSelect: "none",
           }}
+          onDragStart={(e) => e.preventDefault()}
           onMouseDown={(e) => {
             if (activeTool === "crop") {
+              e.preventDefault();
               handleMouseDown(e);
               e.stopPropagation();
             } else if (activeTool === "pen" || activeTool === "eraser") {
+              e.preventDefault();
               const coords = getImageCoords(e);
               if (!coords) return;
               setIsDrawing(true);
@@ -358,6 +364,7 @@ export function EditorCanvas({
               renderPreviewStroke(strokePointsRef.current);
               e.stopPropagation();
             } else if (activeTool === "marquee") {
+              e.preventDefault();
               e.stopPropagation();
               if (floatingSelection) {
                 const coords = getImageCoords(e);
@@ -502,7 +509,8 @@ export function EditorCanvas({
           <canvas
             ref={canvasRef}
             style={{ filter: filterStyle, imageRendering: zoom > 200 ? "pixelated" : "auto" }}
-            className="block shadow-2xl"
+            className="block select-none shadow-2xl"
+            draggable={false}
           />
           <canvas
             ref={previewCanvasRef}

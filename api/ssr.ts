@@ -16,6 +16,22 @@ type ResponseLike = {
 const supportedLanguages = ["en", "es", "pt", "fr", "de", "hi", "ja", "ko", "id", "ar", "zh", "ru", "bn", "uk", "pl", "th", "ur", "sw", "ta"];
 const fallbackLanguage = "en";
 
+const normalizeStackedLanguagePath = (pathname: string): string | null => {
+  const segments = pathname.split("/").filter(Boolean);
+  if (segments.length === 0) return null;
+  const first = segments[0];
+  if (!supportedLanguages.includes(first)) return null;
+
+  let index = 1;
+  while (index < segments.length && supportedLanguages.includes(segments[index])) {
+    index += 1;
+  }
+
+  if (index === 1) return null;
+  const rest = segments.slice(index);
+  return rest.length > 0 ? `/${first}/${rest.join("/")}` : `/${first}`;
+};
+
 const negotiateLanguage = (headerValue: unknown): string => {
   const raw = typeof headerValue === "string" ? headerValue : "";
   if (!raw) return fallbackLanguage;
@@ -92,6 +108,14 @@ export default async function handler(req: RequestLike, res: ResponseLike) {
     const pathname = url.split("?")[0] || "/";
     const root = process.cwd();
     const query = url.includes("?") ? url.slice(url.indexOf("?")) : "";
+
+    const normalizedPath = normalizeStackedLanguagePath(pathname);
+    if (normalizedPath && normalizedPath !== pathname) {
+      res.statusCode = 301;
+      res.setHeader("Location", `${normalizedPath}${query}`);
+      res.end();
+      return;
+    }
 
     if (pathname === "/") {
       const lang = negotiateLanguage(req?.headers?.["accept-language"]);
