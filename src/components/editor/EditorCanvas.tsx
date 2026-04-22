@@ -28,6 +28,7 @@ interface EditorCanvasProps {
   brushSpread: number;
   onDrawStroke: (points: Array<{ x: number; y: number }>, mode: BrushMode) => void;
   onAddText: (x: number, y: number) => void;
+  onPickTextLayer: (x: number, y: number) => void;
 }
 
 const isSupportedUploadFile = (file: File): boolean => {
@@ -59,6 +60,7 @@ export function EditorCanvas({
   brushSpread,
   onDrawStroke,
   onAddText,
+  onPickTextLayer,
 }: EditorCanvasProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -438,12 +440,18 @@ export function EditorCanvas({
               setMarqueeStart(coords);
               onSelectionChange(null);
             } else if (activeTool === "text") {
+              if (e.detail > 1) return;
               e.preventDefault();
               const coords = getImageCoords(e);
               if (!coords) return;
               onAddText(coords.x, coords.y);
               e.stopPropagation();
             }
+          }}
+          onDoubleClick={(e) => {
+            const coords = getImageCoords(e);
+            if (!coords) return;
+            onPickTextLayer(coords.x, coords.y);
           }}
           onMouseMove={(e) => {
             if (activeTool === "crop") {

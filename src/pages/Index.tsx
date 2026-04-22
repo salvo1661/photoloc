@@ -281,6 +281,7 @@ const Index = () => {
             brushSpread={editor.brushSpread}
             onDrawStroke={editor.drawStroke}
             onAddText={editor.addTextAt}
+            onPickTextLayer={editor.pickTextLayerAt}
           />
         </div>
 
@@ -316,19 +317,20 @@ const Index = () => {
           onBrushColorChange={editor.setBrushColor}
           onBrushSizeChange={editor.setBrushSize}
           onBrushSpreadChange={editor.setBrushSpread}
-          onTextContentChange={(value) =>
-            editor.setTextSettings((prev) => ({ ...prev, content: value }))
-          }
+          onTextContentChange={(value) => editor.updateTextSettings({ content: value })}
           onTextFontFamilyChange={editor.setTextFontFamily}
-          onTextFontSizeChange={(value) =>
-            editor.setTextSettings((prev) => ({ ...prev, fontSize: value }))
-          }
-          onTextFontColorChange={(value) =>
-            editor.setTextSettings((prev) => ({ ...prev, fontColor: value }))
-          }
-          onTextFontWeightChange={(value) =>
-            editor.setTextSettings((prev) => ({ ...prev, fontWeight: value }))
-          }
+          onTextFontSizeChange={(value) => editor.updateTextSettings({ fontSize: value })}
+          onTextFontColorChange={(value) => editor.updateTextSettings({ fontColor: value })}
+          onTextFontWeightChange={(value) => editor.updateTextSettings({ fontWeight: value })}
+          onTextAlignChange={(value) => editor.updateTextSettings({ align: value })}
+          onTextLineHeightChange={(value) => editor.updateTextSettings({ lineHeight: value })}
+          onTextLetterSpacingChange={(value) => editor.updateTextSettings({ letterSpacing: value })}
+          onTextStrokeColorChange={(value) => editor.updateTextSettings({ strokeColor: value })}
+          onTextStrokeWidthChange={(value) => editor.updateTextSettings({ strokeWidth: value })}
+          onTextShadowColorChange={(value) => editor.updateTextSettings({ shadowColor: value })}
+          onTextShadowBlurChange={(value) => editor.updateTextSettings({ shadowBlur: value })}
+          onTextShadowOffsetXChange={(value) => editor.updateTextSettings({ shadowOffsetX: value })}
+          onTextShadowOffsetYChange={(value) => editor.updateTextSettings({ shadowOffsetY: value })}
         />
       </div>
 

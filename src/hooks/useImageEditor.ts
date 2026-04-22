@@ -35,6 +35,8 @@ export interface Layer {
   height: number;
   visible: boolean;
   opacity: number;
+  type?: "bitmap" | "text";
+  textData?: TextLayerData;
 }
 
 export interface HistoryEntry {
@@ -52,6 +54,22 @@ export interface TextToolSettings {
   fontSize: number;
   fontColor: string;
   fontWeight: number;
+  align: "left" | "center" | "right";
+  lineHeight: number;
+  letterSpacing: number;
+  strokeColor: string;
+  strokeWidth: number;
+  shadowColor: string;
+  shadowBlur: number;
+  shadowOffsetX: number;
+  shadowOffsetY: number;
+}
+
+export interface TextLayerData extends TextToolSettings {
+  x: number;
+  y: number;
+  boxWidth: number;
+  boxHeight: number;
 }
 
 const DEFAULT_ADJUSTMENTS: Adjustments = {
@@ -118,7 +136,98 @@ const DEFAULT_TEXT_SETTINGS: TextToolSettings = {
   fontSize: 48,
   fontColor: "#111111",
   fontWeight: 500,
+  align: "left",
+  lineHeight: 1.35,
+  letterSpacing: 0,
+  strokeColor: "#000000",
+  strokeWidth: 0,
+  shadowColor: "#00000066",
+  shadowBlur: 0,
+  shadowOffsetX: 0,
+  shadowOffsetY: 0,
 };
+
+const getLineWidth = (ctx: CanvasRenderingContext2D, line: string, letterSpacing: number): number => {
+  if (!line.length) return 0;
+  const base = ctx.measureText(line).width;
+  return base + letterSpacing * Math.max(0, line.length - 1);
+};
+
+const drawLine = (
+  ctx: CanvasRenderingContext2D,
+  line: string,
+  x: number,
+  y: number,
+  letterSpacing: number,
+  mode: "fill" | "stroke"
+) => {
+  if (letterSpacing === 0) {
+    if (mode === "stroke") ctx.strokeText(line, x, y);
+    else ctx.fillText(line, x, y);
+    return;
+  }
+  let cursor = x;
+  for (const char of line) {
+    if (mode === "stroke") ctx.strokeText(char, cursor, y);
+    else ctx.fillText(char, cursor, y);
+    cursor += ctx.measureText(char).width + letterSpacing;
+  }
+};
+
+const renderTextLayerToCanvas = async (
+  textData: TextLayerData,
+  canvasWidth: number,
+  canvasHeight: number
+): Promise<{ canvas: HTMLCanvasElement; boxWidth: number; boxHeight: number }> => {
+  ensureGoogleFontLoaded(textData.fontFamily);
+  try {
+    if ("fonts" in document) {
+      await document.fonts.load(`${textData.fontWeight} ${textData.fontSize}px "${textData.fontFamily}"`);
+    }
+  } catch {
+    // no-op
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = canvasWidth;
+  canvas.height = canvasHeight;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return { canvas, boxWidth: 0, boxHeight: 0 };
+
+  ctx.font = `${textData.fontWeight} ${textData.fontSize}px "${textData.fontFamily}", sans-serif`;
+  ctx.textBaseline = "top";
+  ctx.fillStyle = textData.fontColor;
+  ctx.strokeStyle = textData.strokeColor;
+  ctx.lineWidth = textData.strokeWidth;
+
+  const lines = textData.content.split("\n");
+  const linePx = Math.max(1, Math.round(textData.fontSize * textData.lineHeight));
+  const maxWidth = lines.reduce((max, line) => Math.max(max, getLineWidth(ctx, line, textData.letterSpacing)), 0);
+  const boxHeight = Math.max(linePx, lines.length * linePx);
+  const alignOffset =
+    textData.align === "center" ? maxWidth / 2 : textData.align === "right" ? maxWidth : 0;
+
+  ctx.shadowColor = textData.shadowColor;
+  ctx.shadowBlur = textData.shadowBlur;
+  ctx.shadowOffsetX = textData.shadowOffsetX;
+  ctx.shadowOffsetY = textData.shadowOffsetY;
+
+  lines.forEach((line, index) => {
+    const y = textData.y + index * linePx;
+    const x = textData.x - alignOffset;
+    if (textData.strokeWidth > 0) {
+      drawLine(ctx, line, x, y, textData.letterSpacing, "stroke");
+    }
+    drawLine(ctx, line, x, y, textData.letterSpacing, "fill");
+  });
+
+  return { canvas, boxWidth: Math.max(1, Math.round(maxWidth)), boxHeight };
+};
+
+const cloneLayer = (layer: Layer): Layer => ({
+  ...layer,
+  textData: layer.textData ? { ...layer.textData } : undefined,
+});
 
 export function useImageEditor() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -247,7 +356,7 @@ export function useImageEditor() {
       const newEntry: HistoryEntry = {
         labelKey,
         labelParams,
-        layers: newLayers.map((l) => ({ ...l })),
+        layers: newLayers.map(cloneLayer),
         activeLayerId: activeId,
         canvasWidth: cw,
         canvasHeight: ch,
@@ -319,6 +428,7 @@ export function useImageEditor() {
                   height: docHeight,
                   visible: !layer.hidden,
                   opacity: layer.opacity ?? 1,
+                  type: "bitmap",
                 };
                 return { layer: editorLayer, canvas: fullCanvas };
               })
@@ -343,6 +453,7 @@ export function useImageEditor() {
                     height: docHeight,
                     visible: true,
                     opacity: 1,
+                    type: "bitmap",
                   },
                   canvas: baseCanvas,
                 });
@@ -388,7 +499,7 @@ export function useImageEditor() {
             setHistory([
               {
                 labelKey: "openImage",
-                layers: newLayers.map((l) => ({ ...l })),
+                layers: newLayers.map(cloneLayer),
                 activeLayerId: topLayer.id,
                 canvasWidth: docWidth,
                 canvasHeight: docHeight,
@@ -454,6 +565,7 @@ export function useImageEditor() {
             height: img.height,
             visible: true,
             opacity: 1,
+            type: "bitmap",
           };
 
           const newLayers = [newLayer];
@@ -483,7 +595,7 @@ export function useImageEditor() {
           setHistory([
             {
               labelKey: "openImage",
-              layers: [{ ...newLayer }],
+              layers: [cloneLayer(newLayer)],
               activeLayerId: layerId,
               canvasWidth: img.width,
               canvasHeight: img.height,
@@ -507,7 +619,7 @@ export function useImageEditor() {
   // Restore from history entry
   const restoreFromEntry = useCallback(
     (entry: HistoryEntry) => {
-      setLayers(entry.layers.map((l) => ({ ...l })));
+      setLayers(entry.layers.map(cloneLayer));
       syncLayerCanvasCache(entry.layers);
       setActiveLayerId(entry.activeLayerId);
       setAdjustments({ ...DEFAULT_ADJUSTMENTS });
@@ -556,7 +668,7 @@ export function useImageEditor() {
         const newImageData = result.canvas.toDataURL("image/png");
         const newLayers = layers.map((l) =>
           l.id === activeLayerId
-            ? { ...l, imageData: newImageData, width: result.w, height: result.h }
+            ? { ...l, imageData: newImageData, width: result.w, height: result.h, type: "bitmap", textData: undefined }
             : l
         );
         setLayers(newLayers);
@@ -711,6 +823,8 @@ export function useImageEditor() {
                 imageData: newImageData,
                 width: imageWidth,
                 height: imageHeight,
+                type: "bitmap",
+                textData: undefined,
               }
             : l
         );
@@ -763,84 +877,101 @@ export function useImageEditor() {
     setTextSettings((prev) => ({ ...prev, fontFamily }));
   }, []);
 
-  const addTextAt = useCallback(
-    (x: number, y: number) => {
-      const text = textSettings.content.trim();
-      if (!text || !layers.length || !activeLayerId) return;
-
-      const lineHeight = Math.round(textSettings.fontSize * 1.35);
-      const lines = text.split("\n");
-
-      const drawText = async (base: CanvasImageSource) => {
-        ensureGoogleFontLoaded(textSettings.fontFamily);
-        try {
-          if ("fonts" in document) {
-            await document.fonts.load(
-              `${textSettings.fontWeight} ${textSettings.fontSize}px "${textSettings.fontFamily}"`
-            );
-          }
-        } catch {
-          // no-op
-        }
-
-        const canvas = document.createElement("canvas");
-        canvas.width = imageWidth;
-        canvas.height = imageHeight;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return;
-
-        ctx.drawImage(base, 0, 0, imageWidth, imageHeight);
-        ctx.font = `${textSettings.fontWeight} ${textSettings.fontSize}px "${textSettings.fontFamily}", sans-serif`;
-        ctx.fillStyle = textSettings.fontColor;
-        ctx.textBaseline = "top";
-        lines.forEach((line, index) => {
-          ctx.fillText(line, x, y + index * lineHeight);
-        });
-
-        const newImageData = canvas.toDataURL("image/png");
+  const updateTextSettings = useCallback(
+    (patch: Partial<TextToolSettings>) => {
+      const next = { ...textSettings, ...patch };
+      setTextSettings(next);
+      const activeLayer = layers.find((l) => l.id === activeLayerId);
+      if (!activeLayer || activeLayer.type !== "text" || !activeLayer.textData) return;
+      const nextTextData: TextLayerData = { ...activeLayer.textData, ...next };
+      void renderTextLayerToCanvas(nextTextData, imageWidth, imageHeight).then(({ canvas, boxWidth, boxHeight }) => {
         const newLayers = layers.map((l) =>
           l.id === activeLayerId
             ? {
                 ...l,
-                imageData: newImageData,
-                width: imageWidth,
-                height: imageHeight,
+                imageData: canvas.toDataURL("image/png"),
+                textData: { ...nextTextData, boxWidth, boxHeight },
               }
             : l
         );
         setLayers(newLayers);
         syncLayerCanvasCache(newLayers);
         cacheLayerCanvas(activeLayerId, canvas, imageWidth, imageHeight);
-        pushHistory("addText", newLayers, activeLayerId, imageWidth, imageHeight);
         compositeAndRender(newLayers, imageWidth, imageHeight);
-      };
-
-      const cachedLayer = layerCanvasCacheRef.current.get(activeLayerId);
-      if (cachedLayer) {
-        void drawText(cachedLayer);
-        return;
-      }
-
-      const layerData = getActiveLayerData();
-      if (!layerData) return;
-      const img = new Image();
-      img.onload = () => {
-        void drawText(img);
-      };
-      img.src = layerData;
+      });
     },
-    [
-      textSettings,
-      layers,
-      activeLayerId,
-      imageWidth,
-      imageHeight,
-      pushHistory,
-      compositeAndRender,
-      cacheLayerCanvas,
-      getActiveLayerData,
-      syncLayerCanvasCache,
-    ]
+    [textSettings, layers, activeLayerId, imageWidth, imageHeight, cacheLayerCanvas, compositeAndRender, syncLayerCanvasCache]
+  );
+
+  const addTextAt = useCallback(
+    (x: number, y: number) => {
+      const text = textSettings.content.trim();
+      if (!text || !layers.length) return;
+      const layerId = newLayerId();
+      const textData: TextLayerData = {
+        ...textSettings,
+        x,
+        y,
+        boxWidth: 1,
+        boxHeight: Math.max(1, Math.round(textSettings.fontSize * textSettings.lineHeight)),
+      };
+      void renderTextLayerToCanvas(textData, imageWidth, imageHeight).then(({ canvas, boxWidth, boxHeight }) => {
+        const newLayer: Layer = {
+          id: layerId,
+          name: `Text ${layers.length}`,
+          imageData: canvas.toDataURL("image/png"),
+          width: imageWidth,
+          height: imageHeight,
+          visible: true,
+          opacity: 1,
+          type: "text",
+          textData: { ...textData, boxWidth, boxHeight },
+        };
+        const newLayers = [...layers, newLayer];
+        setLayers(newLayers);
+        syncLayerCanvasCache(newLayers);
+        cacheLayerCanvas(layerId, canvas, imageWidth, imageHeight);
+        setActiveLayerId(layerId);
+        pushHistory("addText", newLayers, layerId, imageWidth, imageHeight);
+        compositeAndRender(newLayers, imageWidth, imageHeight);
+      });
+    },
+    [textSettings, layers, imageWidth, imageHeight, pushHistory, compositeAndRender, cacheLayerCanvas, syncLayerCanvasCache]
+  );
+
+  const pickTextLayerAt = useCallback(
+    (x: number, y: number) => {
+      const hit = [...layers]
+        .reverse()
+        .find((layer) => {
+          if (!layer.visible || layer.type !== "text" || !layer.textData) return false;
+          const t = layer.textData;
+          const alignOffset = t.align === "center" ? t.boxWidth / 2 : t.align === "right" ? t.boxWidth : 0;
+          const left = t.x - alignOffset;
+          const top = t.y;
+          return x >= left && x <= left + t.boxWidth && y >= top && y <= top + t.boxHeight;
+        });
+      if (!hit?.textData) return;
+      setActiveLayerId(hit.id);
+      setActiveTool("text");
+      setTextSettings({
+        content: hit.textData.content,
+        fontFamily: hit.textData.fontFamily,
+        fontSize: hit.textData.fontSize,
+        fontColor: hit.textData.fontColor,
+        fontWeight: hit.textData.fontWeight,
+        align: hit.textData.align,
+        lineHeight: hit.textData.lineHeight,
+        letterSpacing: hit.textData.letterSpacing,
+        strokeColor: hit.textData.strokeColor,
+        strokeWidth: hit.textData.strokeWidth,
+        shadowColor: hit.textData.shadowColor,
+        shadowBlur: hit.textData.shadowBlur,
+        shadowOffsetX: hit.textData.shadowOffsetX,
+        shadowOffsetY: hit.textData.shadowOffsetY,
+      });
+    },
+    [layers]
   );
 
   // Export - composite all visible layers
@@ -993,7 +1124,7 @@ export function useImageEditor() {
 
       const newImageData = eraseCanvas.toDataURL("image/png");
       const newLayers = layers.map((l) =>
-        l.id === activeLayerId ? { ...l, imageData: newImageData } : l
+        l.id === activeLayerId ? { ...l, imageData: newImageData, type: "bitmap", textData: undefined } : l
       );
       setLayers(newLayers);
       syncLayerCanvasCache(newLayers);
@@ -1029,6 +1160,7 @@ export function useImageEditor() {
         height: imageHeight,
         visible: true,
         opacity: 1,
+        type: "bitmap",
       };
 
       const newLayers = [...layers, newLayer];
@@ -1086,6 +1218,7 @@ export function useImageEditor() {
         height: tempCanvas.height,
         visible: true,
         opacity: 1,
+        type: "bitmap",
       };
       const newLayers = [...layers, newLayer];
       setLayers(newLayers);
@@ -1216,6 +1349,27 @@ export function useImageEditor() {
     }
   }, [layers, imageWidth, imageHeight, compositeAndRender]);
 
+  useEffect(() => {
+    const active = layers.find((layer) => layer.id === activeLayerId);
+    if (active?.type !== "text" || !active.textData) return;
+    setTextSettings({
+      content: active.textData.content,
+      fontFamily: active.textData.fontFamily,
+      fontSize: active.textData.fontSize,
+      fontColor: active.textData.fontColor,
+      fontWeight: active.textData.fontWeight,
+      align: active.textData.align,
+      lineHeight: active.textData.lineHeight,
+      letterSpacing: active.textData.letterSpacing,
+      strokeColor: active.textData.strokeColor,
+      strokeWidth: active.textData.strokeWidth,
+      shadowColor: active.textData.shadowColor,
+      shadowBlur: active.textData.shadowBlur,
+      shadowOffsetX: active.textData.shadowOffsetX,
+      shadowOffsetY: active.textData.shadowOffsetY,
+    });
+  }, [layers, activeLayerId]);
+
   // Also re-render on history restore with canvas check
   useEffect(() => {
     if (historyIndex >= 0 && history[historyIndex]) {
@@ -1281,6 +1435,7 @@ export function useImageEditor() {
     setBrushSpread,
     textSettings,
     setTextSettings,
+    updateTextSettings,
     setTextFontFamily,
     setTextLanguage,
     textFontOptions: TEXT_FONT_OPTIONS,
@@ -1300,6 +1455,7 @@ export function useImageEditor() {
     applyResize,
     drawStroke,
     addTextAt,
+    pickTextLayerAt,
     exportImage,
     flattenAdjustments,
     resetAdjustments,

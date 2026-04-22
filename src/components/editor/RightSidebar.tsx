@@ -43,6 +43,15 @@ interface RightSidebarProps {
   onTextFontSizeChange: (value: number) => void;
   onTextFontColorChange: (value: string) => void;
   onTextFontWeightChange: (value: number) => void;
+  onTextAlignChange: (value: "left" | "center" | "right") => void;
+  onTextLineHeightChange: (value: number) => void;
+  onTextLetterSpacingChange: (value: number) => void;
+  onTextStrokeColorChange: (value: string) => void;
+  onTextStrokeWidthChange: (value: number) => void;
+  onTextShadowColorChange: (value: string) => void;
+  onTextShadowBlurChange: (value: number) => void;
+  onTextShadowOffsetXChange: (value: number) => void;
+  onTextShadowOffsetYChange: (value: number) => void;
 }
 
 export function RightSidebar({
@@ -80,6 +89,15 @@ export function RightSidebar({
   onTextFontSizeChange,
   onTextFontColorChange,
   onTextFontWeightChange,
+  onTextAlignChange,
+  onTextLineHeightChange,
+  onTextLetterSpacingChange,
+  onTextStrokeColorChange,
+  onTextStrokeWidthChange,
+  onTextShadowColorChange,
+  onTextShadowBlurChange,
+  onTextShadowOffsetXChange,
+  onTextShadowOffsetYChange,
 }: RightSidebarProps) {
   const adjustmentConfig: {
     key: keyof Adjustments;
@@ -233,6 +251,52 @@ export function RightSidebar({
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
+                  <div className="mb-1 text-[11px] text-secondary-foreground">Align</div>
+                  <select
+                    value={textSettings.align}
+                    onChange={(e) => onTextAlignChange(e.target.value as "left" | "center" | "right")}
+                    className="h-8 w-full rounded border border-border bg-editor-toolbar px-2 text-xs text-foreground outline-none focus:border-editor-active"
+                  >
+                    <option value="left">Left</option>
+                    <option value="center">Center</option>
+                    <option value="right">Right</option>
+                  </select>
+                </div>
+                <div>
+                  <div className="mb-1 flex items-center justify-between">
+                    <span className="text-[11px] text-secondary-foreground">Line Height</span>
+                    <span className="font-mono text-[10px] text-muted-foreground">{textSettings.lineHeight.toFixed(2)}</span>
+                  </div>
+                  <Slider
+                    min={0.8}
+                    max={3}
+                    step={0.05}
+                    value={[textSettings.lineHeight]}
+                    onValueChange={([v]) => onTextLineHeightChange(v)}
+                    disabled={!hasImage}
+                    className="cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="mb-1 flex items-center justify-between">
+                  <span className="text-[11px] text-secondary-foreground">Letter Spacing</span>
+                  <span className="font-mono text-[10px] text-muted-foreground">{textSettings.letterSpacing.toFixed(1)}px</span>
+                </div>
+                <Slider
+                  min={-2}
+                  max={20}
+                  step={0.5}
+                  value={[textSettings.letterSpacing]}
+                  onValueChange={([v]) => onTextLetterSpacingChange(v)}
+                  disabled={!hasImage}
+                  className="cursor-pointer"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
                   <div className="mb-1 text-[11px] text-secondary-foreground">{messages.ui.right.textColor}</div>
                   <label
                     className="flex h-8 cursor-pointer items-center justify-between rounded border border-border px-2"
@@ -258,6 +322,93 @@ export function RightSidebar({
                     <option value="500">500</option>
                     <option value="700">700</option>
                   </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <div className="mb-1 text-[11px] text-secondary-foreground">Stroke Color</div>
+                  <input
+                    type="color"
+                    value={textSettings.strokeColor}
+                    onChange={(e) => onTextStrokeColorChange(e.target.value)}
+                    className="h-8 w-full cursor-pointer rounded border border-border bg-transparent p-1"
+                  />
+                </div>
+                <div>
+                  <div className="mb-1 flex items-center justify-between">
+                    <span className="text-[11px] text-secondary-foreground">Stroke</span>
+                    <span className="font-mono text-[10px] text-muted-foreground">{textSettings.strokeWidth.toFixed(1)}px</span>
+                  </div>
+                  <Slider
+                    min={0}
+                    max={20}
+                    step={0.5}
+                    value={[textSettings.strokeWidth]}
+                    onValueChange={([v]) => onTextStrokeWidthChange(v)}
+                    disabled={!hasImage}
+                    className="cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <div className="mb-1 text-[11px] text-secondary-foreground">Shadow Color</div>
+                  <input
+                    type="color"
+                    value={textSettings.shadowColor.slice(0, 7)}
+                    onChange={(e) => onTextShadowColorChange(e.target.value)}
+                    className="h-8 w-full cursor-pointer rounded border border-border bg-transparent p-1"
+                  />
+                </div>
+                <div>
+                  <div className="mb-1 flex items-center justify-between">
+                    <span className="text-[11px] text-secondary-foreground">Shadow Blur</span>
+                    <span className="font-mono text-[10px] text-muted-foreground">{textSettings.shadowBlur.toFixed(1)}px</span>
+                  </div>
+                  <Slider
+                    min={0}
+                    max={40}
+                    step={0.5}
+                    value={[textSettings.shadowBlur]}
+                    onValueChange={([v]) => onTextShadowBlurChange(v)}
+                    disabled={!hasImage}
+                    className="cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <div className="mb-1 flex items-center justify-between">
+                    <span className="text-[11px] text-secondary-foreground">Shadow X</span>
+                    <span className="font-mono text-[10px] text-muted-foreground">{textSettings.shadowOffsetX.toFixed(1)}px</span>
+                  </div>
+                  <Slider
+                    min={-50}
+                    max={50}
+                    step={0.5}
+                    value={[textSettings.shadowOffsetX]}
+                    onValueChange={([v]) => onTextShadowOffsetXChange(v)}
+                    disabled={!hasImage}
+                    className="cursor-pointer"
+                  />
+                </div>
+                <div>
+                  <div className="mb-1 flex items-center justify-between">
+                    <span className="text-[11px] text-secondary-foreground">Shadow Y</span>
+                    <span className="font-mono text-[10px] text-muted-foreground">{textSettings.shadowOffsetY.toFixed(1)}px</span>
+                  </div>
+                  <Slider
+                    min={-50}
+                    max={50}
+                    step={0.5}
+                    value={[textSettings.shadowOffsetY]}
+                    onValueChange={([v]) => onTextShadowOffsetYChange(v)}
+                    disabled={!hasImage}
+                    className="cursor-pointer"
+                  />
                 </div>
               </div>
 
