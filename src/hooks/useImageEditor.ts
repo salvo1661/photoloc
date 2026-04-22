@@ -1,6 +1,12 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { readPsd, writePsd, type Layer as PsdLayer, type Psd } from "ag-psd";
 import type { HistoryLabelKey, HistoryLabelParams, LayerNameKey } from "@/i18n";
 import { drawStrokePath, type BrushMode, type StrokePoint } from "@/lib/brush";
+import {
+  TEXT_FONT_OPTIONS,
+  ensureGoogleFontLoaded,
+  getDefaultFontForLanguage,
+} from "@/lib/textFonts";
 
 export interface Adjustments {
   brightness: number;
@@ -40,6 +46,14 @@ export interface HistoryEntry {
   canvasHeight: number;
 }
 
+export interface TextToolSettings {
+  content: string;
+  fontFamily: string;
+  fontSize: number;
+  fontColor: string;
+  fontWeight: number;
+}
+
 const DEFAULT_ADJUSTMENTS: Adjustments = {
   brightness: 100,
   contrast: 100,
@@ -51,7 +65,7 @@ const DEFAULT_ADJUSTMENTS: Adjustments = {
 };
 
 export type BrushTool = "pen" | "eraser";
-export type ActiveTool = "select" | "crop" | "resize" | "rotate" | "marquee" | BrushTool;
+export type ActiveTool = "select" | "crop" | "resize" | "rotate" | "marquee" | "text" | BrushTool;
 
 export interface SelectionData {
   rect: CropRect;
@@ -64,6 +78,47 @@ let layerIdCounter = 0;
 function newLayerId() {
   return `layer_${++layerIdCounter}`;
 }
+
+const PSD_MIME_TYPES = new Set([
+  "image/vnd.adobe.photoshop",
+  "application/vnd.adobe.photoshop",
+  "application/photoshop",
+  "application/x-photoshop",
+]);
+
+const isPsdFile = (file: File): boolean => {
+  const lowerName = file.name.toLowerCase();
+  if (lowerName.endsWith(".psd") || lowerName.endsWith(".psb")) return true;
+  return PSD_MIME_TYPES.has(file.type);
+};
+
+const collectLeafPsdLayers = (layers: PsdLayer[] | undefined, out: PsdLayer[] = []): PsdLayer[] => {
+  if (!layers) return out;
+  layers.forEach((layer) => {
+    if (layer.children?.length) {
+      collectLeafPsdLayers(layer.children, out);
+      return;
+    }
+    out.push(layer);
+  });
+  return out;
+};
+
+const loadImageElement = (src: string): Promise<HTMLImageElement> =>
+  new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("Failed to load image"));
+    img.src = src;
+  });
+
+const DEFAULT_TEXT_SETTINGS: TextToolSettings = {
+  content: "Text",
+  fontFamily: "Noto Sans",
+  fontSize: 48,
+  fontColor: "#111111",
+  fontWeight: 500,
+};
 
 export function useImageEditor() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -84,6 +139,7 @@ export function useImageEditor() {
   const [brushColor, setBrushColor] = useState("#111111");
   const [brushSize, setBrushSize] = useState(8);
   const [brushSpread, setBrushSpread] = useState(0);
+  const [textSettings, setTextSettings] = useState<TextToolSettings>({ ...DEFAULT_TEXT_SETTINGS });
 
   // Layer state
   const [layers, setLayers] = useState<Layer[]>([]);
@@ -233,6 +289,125 @@ export function useImageEditor() {
     (file: File) => {
       setIsLoading(true);
       const finishLoading = () => setIsLoading(false);
+
+      if (isPsdFile(file)) {
+        file
+          .arrayBuffer()
+          .then((buffer) => {
+            const psd = readPsd(buffer);
+            const docWidth = psd.width;
+            const docHeight = psd.height;
+
+            const flattenedLayers = collectLeafPsdLayers(psd.children);
+            const prepared = flattenedLayers
+              .map((layer, index) => {
+                if (!layer.canvas) return null;
+                const fullCanvas = document.createElement("canvas");
+                fullCanvas.width = docWidth;
+                fullCanvas.height = docHeight;
+                const fullCtx = fullCanvas.getContext("2d");
+                if (!fullCtx) return null;
+                fullCtx.clearRect(0, 0, docWidth, docHeight);
+                fullCtx.drawImage(layer.canvas, layer.left ?? 0, layer.top ?? 0);
+
+                const layerId = newLayerId();
+                const editorLayer: Layer = {
+                  id: layerId,
+                  name: layer.name || `Layer ${index + 1}`,
+                  imageData: fullCanvas.toDataURL("image/png"),
+                  width: docWidth,
+                  height: docHeight,
+                  visible: !layer.hidden,
+                  opacity: layer.opacity ?? 1,
+                };
+                return { layer: editorLayer, canvas: fullCanvas };
+              })
+              .filter((item): item is { layer: Layer; canvas: HTMLCanvasElement } => item !== null)
+              .reverse();
+
+            if (!prepared.length && psd.canvas) {
+              const baseCanvas = document.createElement("canvas");
+              baseCanvas.width = docWidth;
+              baseCanvas.height = docHeight;
+              const baseCtx = baseCanvas.getContext("2d");
+              if (baseCtx) {
+                baseCtx.drawImage(psd.canvas, 0, 0);
+                const layerId = newLayerId();
+                prepared.push({
+                  layer: {
+                    id: layerId,
+                    name: "Background",
+                    nameKey: "background",
+                    imageData: baseCanvas.toDataURL("image/png"),
+                    width: docWidth,
+                    height: docHeight,
+                    visible: true,
+                    opacity: 1,
+                  },
+                  canvas: baseCanvas,
+                });
+              }
+            }
+
+            if (!prepared.length) {
+              finishLoading();
+              return;
+            }
+
+            setFileName(file.name);
+            setAdjustments({ ...DEFAULT_ADJUSTMENTS });
+
+            const canvas = canvasRef.current;
+            if (!canvas) {
+              finishLoading();
+              return;
+            }
+
+            const newLayers = prepared.map((item) => item.layer);
+            setLayers(newLayers);
+            syncLayerCanvasCache(newLayers);
+            prepared.forEach((item) => {
+              cacheLayerCanvas(item.layer.id, item.canvas, docWidth, docHeight);
+            });
+
+            const topLayer = newLayers[newLayers.length - 1];
+            setActiveLayerId(topLayer.id);
+            setImageWidth(docWidth);
+            setImageHeight(docHeight);
+
+            const container = canvas.parentElement;
+            if (container) {
+              const maxW = container.clientWidth - 40;
+              const maxH = container.clientHeight - 40;
+              const scale = Math.min(maxW / docWidth, maxH / docHeight, 1);
+              setZoom(Math.round(scale * 100));
+            }
+
+            compositeAndRender(newLayers, docWidth, docHeight);
+
+            setHistory([
+              {
+                labelKey: "openImage",
+                layers: newLayers.map((l) => ({ ...l })),
+                activeLayerId: topLayer.id,
+                canvasWidth: docWidth,
+                canvasHeight: docHeight,
+              },
+            ]);
+            setHistoryIndex(0);
+            setActiveTool("select");
+            setCropRect(null);
+            setIsCropping(false);
+            setSelectionRect(null);
+            setFloatingSelection(null);
+            finishLoading();
+          })
+          .catch(() => {
+            finishLoading();
+          });
+        return;
+      }
+
       const reader = new FileReader();
       reader.onerror = () => {
         finishLoading();
@@ -326,7 +501,7 @@ export function useImageEditor() {
       };
       reader.readAsDataURL(file);
     },
-    [cacheLayerCanvas, syncLayerCanvasCache]
+    [cacheLayerCanvas, compositeAndRender, syncLayerCanvasCache]
   );
 
   // Restore from history entry
@@ -577,9 +752,142 @@ export function useImageEditor() {
     ]
   );
 
+  const setTextLanguage = useCallback((lang: string) => {
+    const family = getDefaultFontForLanguage(lang);
+    ensureGoogleFontLoaded(family);
+    setTextSettings((prev) => ({ ...prev, fontFamily: family }));
+  }, []);
+
+  const setTextFontFamily = useCallback((fontFamily: string) => {
+    ensureGoogleFontLoaded(fontFamily);
+    setTextSettings((prev) => ({ ...prev, fontFamily }));
+  }, []);
+
+  const addTextAt = useCallback(
+    (x: number, y: number) => {
+      const text = textSettings.content.trim();
+      if (!text || !layers.length || !activeLayerId) return;
+
+      const lineHeight = Math.round(textSettings.fontSize * 1.35);
+      const lines = text.split("\n");
+
+      const drawText = async (base: CanvasImageSource) => {
+        ensureGoogleFontLoaded(textSettings.fontFamily);
+        try {
+          if ("fonts" in document) {
+            await document.fonts.load(
+              `${textSettings.fontWeight} ${textSettings.fontSize}px "${textSettings.fontFamily}"`
+            );
+          }
+        } catch {
+          // no-op
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = imageWidth;
+        canvas.height = imageHeight;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        ctx.drawImage(base, 0, 0, imageWidth, imageHeight);
+        ctx.font = `${textSettings.fontWeight} ${textSettings.fontSize}px "${textSettings.fontFamily}", sans-serif`;
+        ctx.fillStyle = textSettings.fontColor;
+        ctx.textBaseline = "top";
+        lines.forEach((line, index) => {
+          ctx.fillText(line, x, y + index * lineHeight);
+        });
+
+        const newImageData = canvas.toDataURL("image/png");
+        const newLayers = layers.map((l) =>
+          l.id === activeLayerId
+            ? {
+                ...l,
+                imageData: newImageData,
+                width: imageWidth,
+                height: imageHeight,
+              }
+            : l
+        );
+        setLayers(newLayers);
+        syncLayerCanvasCache(newLayers);
+        cacheLayerCanvas(activeLayerId, canvas, imageWidth, imageHeight);
+        pushHistory("addText", newLayers, activeLayerId, imageWidth, imageHeight);
+        compositeAndRender(newLayers, imageWidth, imageHeight);
+      };
+
+      const cachedLayer = layerCanvasCacheRef.current.get(activeLayerId);
+      if (cachedLayer) {
+        void drawText(cachedLayer);
+        return;
+      }
+
+      const layerData = getActiveLayerData();
+      if (!layerData) return;
+      const img = new Image();
+      img.onload = () => {
+        void drawText(img);
+      };
+      img.src = layerData;
+    },
+    [
+      textSettings,
+      layers,
+      activeLayerId,
+      imageWidth,
+      imageHeight,
+      pushHistory,
+      compositeAndRender,
+      cacheLayerCanvas,
+      getActiveLayerData,
+      syncLayerCanvasCache,
+    ]
+  );
+
   // Export - composite all visible layers
   const exportImage = useCallback(
     (format: string, quality: number) => {
+      if (format === "psd") {
+        const layersForPsd = [...layers].reverse();
+        Promise.all(
+          layersForPsd.map(async (layer) => {
+            const img = await loadImageElement(layer.imageData);
+            const layerCanvas = document.createElement("canvas");
+            layerCanvas.width = imageWidth;
+            layerCanvas.height = imageHeight;
+            const layerCtx = layerCanvas.getContext("2d");
+            if (!layerCtx) return null;
+            layerCtx.clearRect(0, 0, imageWidth, imageHeight);
+            layerCtx.drawImage(img, 0, 0, imageWidth, imageHeight);
+            return {
+              name: layer.name,
+              canvas: layerCanvas,
+              hidden: !layer.visible,
+              opacity: layer.opacity,
+            };
+          })
+        )
+          .then((children) => {
+            const psdDoc: Psd = {
+              width: imageWidth,
+              height: imageHeight,
+              children: children.filter((layer): layer is NonNullable<typeof layer> => layer !== null),
+            };
+            const output = writePsd(psdDoc);
+            const blob = new Blob([output], { type: "application/octet-stream" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            const baseName = fileName ? fileName.replace(/\.[^.]+$/, "") : "edited";
+            link.download = `${baseName}.psd`;
+            link.href = url;
+            link.click();
+            URL.revokeObjectURL(url);
+          })
+          .catch(() => {
+            // no-op: keep editor responsive even if export fails
+          });
+        return;
+      }
+
       const tempCanvas = document.createElement("canvas");
       tempCanvas.width = imageWidth;
       tempCanvas.height = imageHeight;
@@ -971,6 +1279,11 @@ export function useImageEditor() {
     setBrushSize,
     brushSpread,
     setBrushSpread,
+    textSettings,
+    setTextSettings,
+    setTextFontFamily,
+    setTextLanguage,
+    textFontOptions: TEXT_FONT_OPTIONS,
     layers,
     activeLayerId,
     setActiveLayerId,
@@ -986,6 +1299,7 @@ export function useImageEditor() {
     applyCrop,
     applyResize,
     drawStroke,
+    addTextAt,
     exportImage,
     flattenAdjustments,
     resetAdjustments,

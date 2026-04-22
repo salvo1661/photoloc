@@ -22,6 +22,7 @@ export const baseMessages: Messages = {
     tools: {
       selectPan: "Select / Pan",
       marqueeSelect: "Marquee Select",
+      text: "Text",
       pen: "Pen",
       eraser: "Eraser",
       crop: "Crop",
@@ -59,6 +60,13 @@ export const baseMessages: Messages = {
       brushColor: "Color",
       brushSize: "Size",
       brushSpread: "Spread",
+      text: "Text",
+      textContent: "Content",
+      textFont: "Font",
+      textSize: "Size",
+      textColor: "Color",
+      textWeight: "Weight",
+      textPlaceHint: "Click on the canvas to place text",
     },
     adjustments: {
       brightness: "Brightness",
@@ -139,6 +147,7 @@ export const baseMessages: Messages = {
     mergeDown: "Merge down",
     drawStroke: "Draw stroke",
     eraseStroke: "Erase stroke",
+    addText: "Add text",
   },
   layers: {
     background: "Background",

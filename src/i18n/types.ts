@@ -14,7 +14,8 @@ export type HistoryLabelKey =
   | "reorderLayers"
   | "mergeDown"
   | "drawStroke"
-  | "eraseStroke";
+  | "eraseStroke"
+  | "addText";
 
 export type HistoryLabelParams = {
   width?: number;
@@ -45,6 +46,7 @@ export type Messages = {
     tools: {
       selectPan: string;
       marqueeSelect: string;
+      text: string;
       pen: string;
       eraser: string;
       crop: string;
@@ -82,6 +84,13 @@ export type Messages = {
       brushColor: string;
       brushSize: string;
       brushSpread: string;
+      text: string;
+      textContent: string;
+      textFont: string;
+      textSize: string;
+      textColor: string;
+      textWeight: string;
+      textPlaceHint: string;
     };
     adjustments: {
       brightness: string;

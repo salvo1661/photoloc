@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useImageEditor } from "@/hooks/useImageEditor";
 import { TopToolbar } from "@/components/editor/TopToolbar";
 import { LeftSidebar } from "@/components/editor/LeftSidebar";
@@ -34,6 +34,7 @@ const Index = () => {
   const canonicalPath = localizePath(location.pathname, currentLang);
 
   const editor = useImageEditor();
+  const { setTextLanguage } = editor;
   const [showExport, setShowExport] = useState(false);
   const [showResize, setShowResize] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -62,6 +63,10 @@ const Index = () => {
   const handleUploadClick = useCallback(() => {
     fileInputRef.current?.click();
   }, []);
+
+  useEffect(() => {
+    setTextLanguage(currentLang);
+  }, [currentLang, setTextLanguage]);
 
   return (
     <>
@@ -140,7 +145,7 @@ const Index = () => {
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept="image/*,.psd,.psb"
         className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0];
@@ -275,6 +280,7 @@ const Index = () => {
             brushSize={editor.brushSize}
             brushSpread={editor.brushSpread}
             onDrawStroke={editor.drawStroke}
+            onAddText={editor.addTextAt}
           />
         </div>
 
@@ -290,6 +296,8 @@ const Index = () => {
           brushColor={editor.brushColor}
           brushSize={editor.brushSize}
           brushSpread={editor.brushSpread}
+          textSettings={editor.textSettings}
+          textFontOptions={editor.textFontOptions}
           messages={msgs}
           onAdjustmentChange={(key: keyof Adjustments, value: number) =>
             editor.setAdjustments((prev) => ({ ...prev, [key]: value }))
@@ -308,6 +316,19 @@ const Index = () => {
           onBrushColorChange={editor.setBrushColor}
           onBrushSizeChange={editor.setBrushSize}
           onBrushSpreadChange={editor.setBrushSpread}
+          onTextContentChange={(value) =>
+            editor.setTextSettings((prev) => ({ ...prev, content: value }))
+          }
+          onTextFontFamilyChange={editor.setTextFontFamily}
+          onTextFontSizeChange={(value) =>
+            editor.setTextSettings((prev) => ({ ...prev, fontSize: value }))
+          }
+          onTextFontColorChange={(value) =>
+            editor.setTextSettings((prev) => ({ ...prev, fontColor: value }))
+          }
+          onTextFontWeightChange={(value) =>
+            editor.setTextSettings((prev) => ({ ...prev, fontWeight: value }))
+          }
         />
       </div>
 

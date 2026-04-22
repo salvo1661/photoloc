@@ -48,6 +48,7 @@ export function ExportDialog({ open, onClose, onExport, messages }: ExportDialog
                 <SelectItem value="png">{messages.ui.dialogs.export.formatPngLossless}</SelectItem>
                 <SelectItem value="jpeg">{messages.ui.dialogs.export.formatJpeg}</SelectItem>
                 <SelectItem value="webp">{messages.ui.dialogs.export.formatWebp}</SelectItem>
+                <SelectItem value="psd">PSD (Layers)</SelectItem>
               </SelectContent>
             </Select>
           </div>

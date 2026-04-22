@@ -27,7 +27,14 @@ interface EditorCanvasProps {
   brushSize: number;
   brushSpread: number;
   onDrawStroke: (points: Array<{ x: number; y: number }>, mode: BrushMode) => void;
+  onAddText: (x: number, y: number) => void;
 }
+
+const isSupportedUploadFile = (file: File): boolean => {
+  const lowerName = file.name.toLowerCase();
+  if (lowerName.endsWith(".psd") || lowerName.endsWith(".psb")) return true;
+  return file.type.startsWith("image/");
+};
 
 export function EditorCanvas({
   canvasRef,
@@ -51,6 +58,7 @@ export function EditorCanvas({
   brushSize,
   brushSpread,
   onDrawStroke,
+  onAddText,
 }: EditorCanvasProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -73,7 +81,7 @@ export function EditorCanvas({
       e.preventDefault();
       setIsDragging(false);
       const file = e.dataTransfer.files[0];
-      if (file && file.type.startsWith("image/")) {
+      if (file && isSupportedUploadFile(file)) {
         onLoadImage(file);
       }
     },
@@ -218,7 +226,7 @@ export function EditorCanvas({
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
+          accept="image/*,.psd,.psb"
           className="hidden"
           onChange={handleFileChange}
         />
@@ -265,6 +273,8 @@ export function EditorCanvas({
       className={`relative flex flex-1 select-none overflow-auto bg-editor-workspace ${
         activeTool === "select" && hasImage
           ? (isPanning ? "cursor-grabbing" : "cursor-grab")
+          : activeTool === "text"
+          ? "cursor-text"
           : activeTool === "pen" || activeTool === "eraser"
           ? "cursor-crosshair"
           : ""
@@ -310,7 +320,7 @@ export function EditorCanvas({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept="image/*,.psd,.psb"
         className="hidden"
         onChange={handleFileChange}
       />
@@ -427,6 +437,12 @@ export function EditorCanvas({
               if (!coords) return;
               setMarqueeStart(coords);
               onSelectionChange(null);
+            } else if (activeTool === "text") {
+              e.preventDefault();
+              const coords = getImageCoords(e);
+              if (!coords) return;
+              onAddText(coords.x, coords.y);
+              e.stopPropagation();
             }
           }}
           onMouseMove={(e) => {

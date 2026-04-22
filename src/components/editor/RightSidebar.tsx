@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { RotateCcw, Check, History } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { LayerPanel } from "@/components/editor/LayerPanel";
-import type { ActiveTool, Adjustments, HistoryEntry, Layer } from "@/hooks/useImageEditor";
+import type { ActiveTool, Adjustments, HistoryEntry, Layer, TextToolSettings } from "@/hooks/useImageEditor";
+import type { TextFontOption } from "@/lib/textFonts";
 import { formatHistoryLabel } from "@/i18n";
 import type { Messages } from "@/i18n";
 
@@ -19,6 +20,8 @@ interface RightSidebarProps {
   brushColor: string;
   brushSize: number;
   brushSpread: number;
+  textSettings: TextToolSettings;
+  textFontOptions: TextFontOption[];
   messages: Messages;
   onAdjustmentChange: (key: keyof Adjustments, value: number) => void;
   onResetAdjustments: () => void;
@@ -35,6 +38,11 @@ interface RightSidebarProps {
   onBrushColorChange: (color: string) => void;
   onBrushSizeChange: (value: number) => void;
   onBrushSpreadChange: (value: number) => void;
+  onTextContentChange: (value: string) => void;
+  onTextFontFamilyChange: (value: string) => void;
+  onTextFontSizeChange: (value: number) => void;
+  onTextFontColorChange: (value: string) => void;
+  onTextFontWeightChange: (value: number) => void;
 }
 
 export function RightSidebar({
@@ -49,6 +57,8 @@ export function RightSidebar({
   brushColor,
   brushSize,
   brushSpread,
+  textSettings,
+  textFontOptions,
   messages,
   onAdjustmentChange,
   onResetAdjustments,
@@ -65,6 +75,11 @@ export function RightSidebar({
   onBrushColorChange,
   onBrushSizeChange,
   onBrushSpreadChange,
+  onTextContentChange,
+  onTextFontFamilyChange,
+  onTextFontSizeChange,
+  onTextFontColorChange,
+  onTextFontWeightChange,
 }: RightSidebarProps) {
   const adjustmentConfig: {
     key: keyof Adjustments;
@@ -163,6 +178,90 @@ export function RightSidebar({
                   className="cursor-pointer"
                 />
               </div>
+            </div>
+          </div>
+        )}
+
+        {activeTool === "text" && (
+          <div className="border-b border-border">
+            <div className="flex h-8 items-center border-b border-border bg-editor-panel-header px-3">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {messages.ui.right.text}
+              </span>
+            </div>
+            <div className="space-y-3 p-3">
+              <div>
+                <div className="mb-1 text-[11px] text-secondary-foreground">{messages.ui.right.textContent}</div>
+                <textarea
+                  value={textSettings.content}
+                  onChange={(e) => onTextContentChange(e.target.value)}
+                  className="h-16 w-full resize-none rounded border border-border bg-editor-toolbar px-2 py-1 text-xs text-foreground outline-none focus:border-editor-active"
+                  placeholder="Text"
+                />
+              </div>
+
+              <div>
+                <div className="mb-1 text-[11px] text-secondary-foreground">{messages.ui.right.textFont}</div>
+                <select
+                  value={textSettings.fontFamily}
+                  onChange={(e) => onTextFontFamilyChange(e.target.value)}
+                  className="h-8 w-full rounded border border-border bg-editor-toolbar px-2 text-xs text-foreground outline-none focus:border-editor-active"
+                >
+                  {textFontOptions.map((option) => (
+                    <option key={option.family} value={option.family}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <div className="mb-1 flex items-center justify-between">
+                  <span className="text-[11px] text-secondary-foreground">{messages.ui.right.textSize}</span>
+                  <span className="font-mono text-[10px] text-muted-foreground">{Math.round(textSettings.fontSize)}px</span>
+                </div>
+                <Slider
+                  min={10}
+                  max={220}
+                  step={1}
+                  value={[textSettings.fontSize]}
+                  onValueChange={([v]) => onTextFontSizeChange(v)}
+                  disabled={!hasImage}
+                  className="cursor-pointer"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <div className="mb-1 text-[11px] text-secondary-foreground">{messages.ui.right.textColor}</div>
+                  <label
+                    className="flex h-8 cursor-pointer items-center justify-between rounded border border-border px-2"
+                    style={{ backgroundColor: "#11111122" }}
+                  >
+                    <span className="font-mono text-[10px] uppercase text-muted-foreground">{textSettings.fontColor}</span>
+                    <input
+                      type="color"
+                      value={textSettings.fontColor}
+                      onChange={(e) => onTextFontColorChange(e.target.value)}
+                      className="h-5 w-5 cursor-pointer rounded border-0 bg-transparent p-0"
+                    />
+                  </label>
+                </div>
+                <div>
+                  <div className="mb-1 text-[11px] text-secondary-foreground">{messages.ui.right.textWeight}</div>
+                  <select
+                    value={String(textSettings.fontWeight)}
+                    onChange={(e) => onTextFontWeightChange(Number(e.target.value))}
+                    className="h-8 w-full rounded border border-border bg-editor-toolbar px-2 text-xs text-foreground outline-none focus:border-editor-active"
+                  >
+                    <option value="400">400</option>
+                    <option value="500">500</option>
+                    <option value="700">700</option>
+                  </select>
+                </div>
+              </div>
+
+              <p className="text-[10px] text-muted-foreground">{messages.ui.right.textPlaceHint}</p>
             </div>
           </div>
         )}
