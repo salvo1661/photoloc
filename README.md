@@ -52,6 +52,12 @@ npm run dev
 npm run build
 ```
 
+### Run In Production
+```sh
+npm run build
+PORT=4173 SITE_URL=https://your-domain.com npm run start
+```
+
 ### Preview
 ```sh
 npm run preview
@@ -72,6 +78,110 @@ npm run test
 - `src/hooks/useImageEditor.ts` editor state and image operations
 - `src/components/editor` editor UI (toolbar, canvas, sidebars)
 - `src/i18n` localization resources
+
+## Linux Server Deployment
+
+This app can run on a regular Linux server without Vercel. The production flow used in this repo is:
+
+1. Install Node.js 18+ and npm
+2. Install dependencies with `npm ci`
+3. Build the client and SSR bundle with `npm run build`
+4. Run the app with `systemd`
+5. Put `nginx` in front of the Node SSR server
+
+Useful environment variables:
+
+- `PORT`: port for the Node server, default `4173`
+- `SITE_URL`: public origin used for generated URLs such as `sitemap.xml`
+
+Example:
+
+```sh
+npm install
+npm run build
+PORT=4173 SITE_URL=https://your-domain.com npm run start
+```
+
+### Production Setup Used Here
+
+- App directory: `/home/photoloc/app`
+- App user: `photoloc`
+- Public domain: `photo.localtool.tech`
+- Reverse proxy: `nginx`
+- Process manager: `systemd`
+- Internal app port: `4173`
+
+### Deploy Script
+
+This repo includes a deploy helper:
+
+```sh
+./deploy.sh
+```
+
+The script does the following:
+
+1. Syncs the repo to `/home/photoloc/app` with `rsync`
+2. Runs `npm ci && npm run build` on the server
+3. Restarts the `photoloc` systemd service
+4. Verifies both the local app port and the public HTTPS URL
+
+If your Lightsail key is not stored at the repo root, pass it explicitly:
+
+```sh
+KEY_PATH=/path/to/LightsailDefaultKey-us-east-1.pem ./deploy.sh
+```
+
+### Example systemd service
+
+```ini
+[Unit]
+Description=Photoloc SSR app
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=photoloc
+Group=photoloc
+WorkingDirectory=/home/photoloc/app
+Environment=NODE_ENV=production
+Environment=PORT=4173
+Environment=SITE_URL=https://photo.localtool.tech
+ExecStart=/usr/bin/npm run start
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+### Example nginx vhost
+
+```nginx
+server {
+    server_name photo.localtool.tech;
+
+    location / {
+        proxy_pass http://127.0.0.1:4173;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    listen 443 ssl;
+    ssl_certificate /etc/letsencrypt/live/photo.localtool.tech/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/photo.localtool.tech/privkey.pem;
+}
+
+server {
+    listen 80;
+    server_name photo.localtool.tech;
+    return 301 https://$host$request_uri;
+}
+```
 
 ## Contributing
 Photoloc is open source and we welcome contributions.

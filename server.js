@@ -5,8 +5,10 @@ import express from "express";
 const root = process.cwd();
 const app = express();
 const port = process.env.PORT || 4173;
+const siteUrl = process.env.SITE_URL || "http://localhost:" + port;
 
 app.use(express.static(path.join(root, "dist/client"), { index: false }));
+app.use(express.static(path.join(root, "public"), { index: false }));
 
 const supportedLanguages = ["en", "es", "pt", "fr", "de", "hi", "ja", "ko", "id", "ar", "zh", "ru", "bn", "uk", "pl", "th", "ur", "sw", "ta"];
 const fallbackLanguage = "en";
@@ -58,7 +60,7 @@ const negotiateLanguage = (headerValue) => {
 };
 
 app.get("/sitemap.xml", (req, res) => {
-  const host = "https://photo.localtool.tech";
+  const host = siteUrl.replace(/\/$/, "");
   const urls = ["/", "/en"];
   supportedLanguages.forEach((lang) => {
     urls.push(`/${lang}`);
