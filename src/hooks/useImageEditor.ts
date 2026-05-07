@@ -137,6 +137,63 @@ const loadImageElement = (src: string): Promise<HTMLImageElement> =>
     img.src = src;
   });
 
+const configureHighQualitySmoothing = (ctx: CanvasRenderingContext2D) => {
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+};
+
+const createResizedCanvas = (
+  source: HTMLImageElement | HTMLCanvasElement,
+  targetWidth: number,
+  targetHeight: number
+) => {
+  const output = document.createElement("canvas");
+  output.width = targetWidth;
+  output.height = targetHeight;
+
+  const outputCtx = output.getContext("2d");
+  if (!outputCtx) return output;
+
+  configureHighQualitySmoothing(outputCtx);
+
+  const sourceWidth = "naturalWidth" in source ? source.naturalWidth : source.width;
+  const sourceHeight = "naturalHeight" in source ? source.naturalHeight : source.height;
+
+  if (targetWidth >= sourceWidth || targetHeight >= sourceHeight) {
+    outputCtx.drawImage(source, 0, 0, targetWidth, targetHeight);
+    return output;
+  }
+
+  let currentCanvas = document.createElement("canvas");
+  currentCanvas.width = sourceWidth;
+  currentCanvas.height = sourceHeight;
+
+  const currentCtx = currentCanvas.getContext("2d");
+  if (!currentCtx) {
+    outputCtx.drawImage(source, 0, 0, targetWidth, targetHeight);
+    return output;
+  }
+
+  configureHighQualitySmoothing(currentCtx);
+  currentCtx.drawImage(source, 0, 0, sourceWidth, sourceHeight);
+
+  while (currentCanvas.width * 0.5 > targetWidth || currentCanvas.height * 0.5 > targetHeight) {
+    const nextCanvas = document.createElement("canvas");
+    nextCanvas.width = Math.max(targetWidth, Math.floor(currentCanvas.width * 0.5));
+    nextCanvas.height = Math.max(targetHeight, Math.floor(currentCanvas.height * 0.5));
+
+    const nextCtx = nextCanvas.getContext("2d");
+    if (!nextCtx) break;
+
+    configureHighQualitySmoothing(nextCtx);
+    nextCtx.drawImage(currentCanvas, 0, 0, nextCanvas.width, nextCanvas.height);
+    currentCanvas = nextCanvas;
+  }
+
+  outputCtx.drawImage(currentCanvas, 0, 0, targetWidth, targetHeight);
+  return output;
+};
+
 const DEFAULT_TEXT_SETTINGS: TextToolSettings = {
   content: "Text",
   fontFamily: "Noto Sans",
@@ -792,15 +849,7 @@ export function useImageEditor() {
         new Promise<Layer>((resolve) => {
           const img = new Image();
           img.onload = () => {
-            const canvas = document.createElement("canvas");
-            canvas.width = newWidth;
-            canvas.height = newHeight;
-            const ctx = canvas.getContext("2d");
-            if (!ctx) {
-              resolve({ ...layer, width: newWidth, height: newHeight });
-              return;
-            }
-            ctx.drawImage(img, 0, 0, newWidth, newHeight);
+            const canvas = createResizedCanvas(img, newWidth, newHeight);
             resolve({
               ...layer,
               imageData: canvas.toDataURL("image/png"),

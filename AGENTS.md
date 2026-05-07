@@ -9,6 +9,7 @@
 - Systemd service: `photoloc`
 - Nginx vhost: `/etc/nginx/conf.d/photo.localtool.tech.conf`
 - Public domain: `photo.localtool.tech`
+- GitHub Actions workflow: `.github/workflows/deploy.yml`
 
 ## Manual Deploy
 
@@ -43,3 +44,14 @@ curl -I https://photo.localtool.tech/en
 - The app is served by `nginx` and proxied to the Node SSR server on `127.0.0.1:4173`.
 - HTTPS is managed with `certbot`, and renewals are handled by `certbot-renew.timer`.
 - If `git pull` is blocked by local changes, stash first, pull, then re-apply the stash.
+- The GitHub Actions deploy flow syncs files with `rsync`, builds on the server, then restarts `photoloc.service`.
+- Required GitHub repository secrets:
+  - `PHOTOLOC_DEPLOY_KEY`
+  - `LIGHTSAIL_DEFAULT_KEY`
+  - `PHOTOLOC_HOST`
+  - `PHOTOLOC_USER`
+  - `LIGHTSAIL_SUDO_USER`
+  - `PHOTOLOC_APP_DIR`
+  - `PHOTOLOC_SERVICE_NAME`
+  - `PHOTOLOC_APP_PORT`
+  - `PHOTOLOC_DOMAIN`

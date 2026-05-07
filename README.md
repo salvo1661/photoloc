@@ -132,6 +132,42 @@ If your Lightsail key is not stored at the repo root, pass it explicitly:
 KEY_PATH=/path/to/LightsailDefaultKey-us-east-1.pem ./deploy.sh
 ```
 
+### GitHub Actions Deployment
+
+This repo also includes a GitHub Actions workflow at `.github/workflows/deploy.yml`.
+
+On every push to `main`, it:
+
+1. Checks out the repo on GitHub Actions
+2. Syncs the files to `/home/photoloc/app` with `rsync`
+3. Runs `npm ci && npm run build` on the server
+4. Restarts `photoloc.service`
+5. Verifies both the internal app port and the public HTTPS URL
+
+Required GitHub repository secrets:
+
+- `PHOTOLOC_DEPLOY_KEY`: private key for the `photoloc` user
+- `LIGHTSAIL_DEFAULT_KEY`: private key for the `ec2-user` account
+- `PHOTOLOC_HOST`: server IP or hostname
+- `PHOTOLOC_USER`: `photoloc`
+- `LIGHTSAIL_SUDO_USER`: `ec2-user`
+- `PHOTOLOC_APP_DIR`: `/home/photoloc/app`
+- `PHOTOLOC_SERVICE_NAME`: `photoloc`
+- `PHOTOLOC_APP_PORT`: `4173`
+- `PHOTOLOC_DOMAIN`: `photo.localtool.tech`
+
+Typical values for this server:
+
+```text
+PHOTOLOC_HOST=35.175.93.255
+PHOTOLOC_USER=photoloc
+LIGHTSAIL_SUDO_USER=ec2-user
+PHOTOLOC_APP_DIR=/home/photoloc/app
+PHOTOLOC_SERVICE_NAME=photoloc
+PHOTOLOC_APP_PORT=4173
+PHOTOLOC_DOMAIN=photo.localtool.tech
+```
+
 ### Example systemd service
 
 ```ini

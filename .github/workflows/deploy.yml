@@ -1,0 +1,82 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Start SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: |
+            ${{ secrets.PHOTOLOC_DEPLOY_KEY }}
+            ${{ secrets.LIGHTSAIL_DEFAULT_KEY }}
+
+      - name: Write SSH config
+        env:
+          PHOTOLOC_HOST: ${{ secrets.PHOTOLOC_HOST }}
+          PHOTOLOC_USER: ${{ secrets.PHOTOLOC_USER }}
+          LIGHTSAIL_SUDO_USER: ${{ secrets.LIGHTSAIL_SUDO_USER }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          cat > ~/.ssh/config <<EOF
+          Host photoloc-app
+            HostName ${PHOTOLOC_HOST}
+            User ${PHOTOLOC_USER}
+            StrictHostKeyChecking no
+
+          Host photoloc-admin
+            HostName ${PHOTOLOC_HOST}
+            User ${LIGHTSAIL_SUDO_USER}
+            StrictHostKeyChecking no
+          EOF
+          chmod 600 ~/.ssh/config
+
+      - name: Sync repository to server
+        env:
+          PHOTOLOC_APP_DIR: ${{ secrets.PHOTOLOC_APP_DIR }}
+        run: |
+          rsync -az --delete \
+            --exclude '.git' \
+            --exclude 'node_modules' \
+            --exclude 'dist' \
+            --exclude '*.pem' \
+            ./ "photoloc-app:${PHOTOLOC_APP_DIR}/"
+
+      - name: Install dependencies and build on server
+        env:
+          PHOTOLOC_APP_DIR: ${{ secrets.PHOTOLOC_APP_DIR }}
+        run: |
+          ssh photoloc-app "cd ${PHOTOLOC_APP_DIR} && npm ci && npm run build"
+
+      - name: Restart systemd service
+        env:
+          PHOTOLOC_SERVICE_NAME: ${{ secrets.PHOTOLOC_SERVICE_NAME }}
+        run: |
+          ssh photoloc-admin "sudo systemctl restart ${PHOTOLOC_SERVICE_NAME} && sudo systemctl status ${PHOTOLOC_SERVICE_NAME} --no-pager -l"
+
+      - name: Verify internal app health
+        env:
+          PHOTOLOC_APP_PORT: ${{ secrets.PHOTOLOC_APP_PORT }}
+        run: |
+          ssh photoloc-app "curl -I http://127.0.0.1:${PHOTOLOC_APP_PORT}/en"
+
+      - name: Verify public site
+        env:
+          PHOTOLOC_DOMAIN: ${{ secrets.PHOTOLOC_DOMAIN }}
+        run: |
+          curl -I "https://${PHOTOLOC_DOMAIN}/en"
