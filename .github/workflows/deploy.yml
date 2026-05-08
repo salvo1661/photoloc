@@ -30,6 +30,10 @@ jobs:
           PHOTOLOC_HOST: ${{ secrets.PHOTOLOC_HOST }}
           PHOTOLOC_USER: ${{ secrets.PHOTOLOC_USER }}
         run: |
+          PHOTOLOC_HOST="$(printf '%s' "${PHOTOLOC_HOST}" | tr -d '\r\n')"
+          PHOTOLOC_USER="$(printf '%s' "${PHOTOLOC_USER}" | tr -d '\r\n')"
+          test -n "${PHOTOLOC_HOST}"
+          test -n "${PHOTOLOC_USER}"
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
           cat > ~/.ssh/config <<EOF
@@ -44,12 +48,19 @@ jobs:
         env:
           PHOTOLOC_APP_DIR: ${{ secrets.PHOTOLOC_APP_DIR }}
         run: |
+          PHOTOLOC_APP_DIR="$(printf '%s' "${PHOTOLOC_APP_DIR}" | tr -d '\r\n')"
           test -n "${PHOTOLOC_APP_DIR}"
           test "${PHOTOLOC_APP_DIR}" != "/"
           case "${PHOTOLOC_APP_DIR}" in
             /home/photoloc/*) ;;
             *)
               echo "Refusing to deploy outside /home/photoloc: ${PHOTOLOC_APP_DIR}" >&2
+              exit 1
+              ;;
+          esac
+          case "${PHOTOLOC_APP_DIR}" in
+            *[[:space:]]*)
+              echo "PHOTOLOC_APP_DIR contains whitespace: ${PHOTOLOC_APP_DIR@Q}" >&2
               exit 1
               ;;
           esac
@@ -65,18 +76,21 @@ jobs:
         env:
           PHOTOLOC_APP_DIR: ${{ secrets.PHOTOLOC_APP_DIR }}
         run: |
+          PHOTOLOC_APP_DIR="$(printf '%s' "${PHOTOLOC_APP_DIR}" | tr -d '\r\n')"
           ssh photoloc-app "cd ${PHOTOLOC_APP_DIR} && npm ci && npm run build"
 
       - name: Restart systemd service
         env:
           PHOTOLOC_SERVICE_NAME: ${{ secrets.PHOTOLOC_SERVICE_NAME }}
         run: |
+          PHOTOLOC_SERVICE_NAME="$(printf '%s' "${PHOTOLOC_SERVICE_NAME}" | tr -d '\r\n')"
           ssh photoloc-app "sudo systemctl restart ${PHOTOLOC_SERVICE_NAME} && sudo systemctl status ${PHOTOLOC_SERVICE_NAME}"
 
       - name: Verify internal app health
         env:
           PHOTOLOC_APP_PORT: ${{ secrets.PHOTOLOC_APP_PORT }}
         run: |
+          PHOTOLOC_APP_PORT="$(printf '%s' "${PHOTOLOC_APP_PORT}" | tr -d '\r\n')"
           ssh photoloc-app "curl -I http://127.0.0.1:${PHOTOLOC_APP_PORT}/en"
 
       - name: Verify public site
