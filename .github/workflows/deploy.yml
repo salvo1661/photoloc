@@ -50,13 +50,9 @@ jobs:
         run: |
           PHOTOLOC_APP_DIR="$(printf '%s' "${PHOTOLOC_APP_DIR}" | tr -d '\r\n')"
           test -n "${PHOTOLOC_APP_DIR}"
-          echo "PHOTOLOC_APP_DIR is set"
-          echo "PHOTOLOC_APP_DIR length: ${#PHOTOLOC_APP_DIR}"
           test "${PHOTOLOC_APP_DIR}" != "/"
           case "${PHOTOLOC_APP_DIR}" in
-            /home/photoloc/*)
-              echo "PHOTOLOC_APP_DIR passed safety check"
-              ;;
+            /home/photoloc/*) ;;
             *)
               echo "Refusing to deploy outside /home/photoloc: ${PHOTOLOC_APP_DIR}" >&2
               exit 1
@@ -95,7 +91,15 @@ jobs:
           PHOTOLOC_APP_PORT: ${{ secrets.PHOTOLOC_APP_PORT }}
         run: |
           PHOTOLOC_APP_PORT="$(printf '%s' "${PHOTOLOC_APP_PORT}" | tr -d '\r\n')"
-          ssh photoloc-app "curl -I http://127.0.0.1:${PHOTOLOC_APP_PORT}/en"
+          ssh photoloc-app "
+            for attempt in 1 2 3 4 5 6 7 8 9 10; do
+              if curl -fsSI http://127.0.0.1:${PHOTOLOC_APP_PORT}/en >/dev/null; then
+                exit 0
+              fi
+              sleep 2
+            done
+            curl -I http://127.0.0.1:${PHOTOLOC_APP_PORT}/en
+          "
 
       - name: Verify public site
         run: |
