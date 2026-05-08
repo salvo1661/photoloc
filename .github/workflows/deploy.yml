@@ -14,11 +14,6 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
-      PHOTOLOC_HOST: 35.175.93.255
-      PHOTOLOC_USER: photoloc
-      PHOTOLOC_APP_DIR: /home/photoloc/app
-      PHOTOLOC_SERVICE_NAME: photoloc
-      PHOTOLOC_APP_PORT: 4173
       PHOTOLOC_DOMAIN: photo.localtool.tech
 
     steps:
@@ -31,6 +26,9 @@ jobs:
           ssh-private-key: ${{ secrets.PHOTOLOC_DEPLOY_KEY }}
 
       - name: Write SSH config
+        env:
+          PHOTOLOC_HOST: ${{ secrets.PHOTOLOC_HOST }}
+          PHOTOLOC_USER: ${{ secrets.PHOTOLOC_USER }}
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
@@ -43,6 +41,8 @@ jobs:
           chmod 600 ~/.ssh/config
 
       - name: Sync repository to server
+        env:
+          PHOTOLOC_APP_DIR: ${{ secrets.PHOTOLOC_APP_DIR }}
         run: |
           rsync -az --delete \
             --exclude '.git' \
@@ -52,14 +52,20 @@ jobs:
             ./ "photoloc-app:${PHOTOLOC_APP_DIR}/"
 
       - name: Install dependencies and build on server
+        env:
+          PHOTOLOC_APP_DIR: ${{ secrets.PHOTOLOC_APP_DIR }}
         run: |
           ssh photoloc-app "cd ${PHOTOLOC_APP_DIR} && npm ci && npm run build"
 
       - name: Restart systemd service
+        env:
+          PHOTOLOC_SERVICE_NAME: ${{ secrets.PHOTOLOC_SERVICE_NAME }}
         run: |
           ssh photoloc-app "sudo systemctl restart ${PHOTOLOC_SERVICE_NAME} && sudo systemctl status ${PHOTOLOC_SERVICE_NAME}"
 
       - name: Verify internal app health
+        env:
+          PHOTOLOC_APP_PORT: ${{ secrets.PHOTOLOC_APP_PORT }}
         run: |
           ssh photoloc-app "curl -I http://127.0.0.1:${PHOTOLOC_APP_PORT}/en"
 

@@ -147,9 +147,13 @@ On every push to `main`, it:
 Required GitHub repository secrets:
 
 - `PHOTOLOC_DEPLOY_KEY`: private key for the `photoloc` user
-- No other secrets are required for the current private deployment setup
+- `PHOTOLOC_HOST`: server IP or hostname
+- `PHOTOLOC_USER`: SSH user for deploys
+- `PHOTOLOC_APP_DIR`: remote app directory
+- `PHOTOLOC_SERVICE_NAME`: systemd service name
+- `PHOTOLOC_APP_PORT`: local app port used for health checks
 
-The current workflow hardcodes these values:
+Current values used for this deployment:
 
 ```text
 PHOTOLOC_HOST=35.175.93.255
