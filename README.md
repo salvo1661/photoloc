@@ -147,21 +147,13 @@ On every push to `main`, it:
 Required GitHub repository secrets:
 
 - `PHOTOLOC_DEPLOY_KEY`: private key for the `photoloc` user
-- `LIGHTSAIL_DEFAULT_KEY`: private key for the `ec2-user` account
-- `PHOTOLOC_HOST`: server IP or hostname
-- `PHOTOLOC_USER`: `photoloc`
-- `LIGHTSAIL_SUDO_USER`: `ec2-user`
-- `PHOTOLOC_APP_DIR`: `/home/photoloc/app`
-- `PHOTOLOC_SERVICE_NAME`: `photoloc`
-- `PHOTOLOC_APP_PORT`: `4173`
-- `PHOTOLOC_DOMAIN`: `photo.localtool.tech`
+- No other secrets are required for the current private deployment setup
 
-Typical values for this server:
+The current workflow hardcodes these values:
 
 ```text
 PHOTOLOC_HOST=35.175.93.255
 PHOTOLOC_USER=photoloc
-LIGHTSAIL_SUDO_USER=ec2-user
 PHOTOLOC_APP_DIR=/home/photoloc/app
 PHOTOLOC_SERVICE_NAME=photoloc
 PHOTOLOC_APP_PORT=4173

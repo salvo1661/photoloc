@@ -47,11 +47,5 @@ curl -I https://photo.localtool.tech/en
 - The GitHub Actions deploy flow syncs files with `rsync`, builds on the server, then restarts `photoloc.service`.
 - Required GitHub repository secrets:
   - `PHOTOLOC_DEPLOY_KEY`
-  - `LIGHTSAIL_DEFAULT_KEY`
-  - `PHOTOLOC_HOST`
-  - `PHOTOLOC_USER`
-  - `LIGHTSAIL_SUDO_USER`
-  - `PHOTOLOC_APP_DIR`
-  - `PHOTOLOC_SERVICE_NAME`
-  - `PHOTOLOC_APP_PORT`
-  - `PHOTOLOC_DOMAIN`
+- The workflow hardcodes the current production host, app path, service name, port, and domain.
+- `photoloc` has restricted passwordless sudo for `systemctl restart photoloc` and `systemctl status photoloc`.
