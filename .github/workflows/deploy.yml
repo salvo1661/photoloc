@@ -50,9 +50,13 @@ jobs:
         run: |
           PHOTOLOC_APP_DIR="$(printf '%s' "${PHOTOLOC_APP_DIR}" | tr -d '\r\n')"
           test -n "${PHOTOLOC_APP_DIR}"
+          echo "PHOTOLOC_APP_DIR is set"
+          echo "PHOTOLOC_APP_DIR length: ${#PHOTOLOC_APP_DIR}"
           test "${PHOTOLOC_APP_DIR}" != "/"
           case "${PHOTOLOC_APP_DIR}" in
-            /home/photoloc/*) ;;
+            /home/photoloc/*)
+              echo "PHOTOLOC_APP_DIR passed safety check"
+              ;;
             *)
               echo "Refusing to deploy outside /home/photoloc: ${PHOTOLOC_APP_DIR}" >&2
               exit 1
