@@ -44,6 +44,16 @@ jobs:
         env:
           PHOTOLOC_APP_DIR: ${{ secrets.PHOTOLOC_APP_DIR }}
         run: |
+          test -n "${PHOTOLOC_APP_DIR}"
+          test "${PHOTOLOC_APP_DIR}" != "/"
+          case "${PHOTOLOC_APP_DIR}" in
+            /home/photoloc/*) ;;
+            *)
+              echo "Refusing to deploy outside /home/photoloc: ${PHOTOLOC_APP_DIR}" >&2
+              exit 1
+              ;;
+          esac
+          ssh photoloc-app "mkdir -p '${PHOTOLOC_APP_DIR}'"
           rsync -az --delete \
             --exclude '.git' \
             --exclude 'node_modules' \
